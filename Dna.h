@@ -12,6 +12,7 @@
 #include <zlib.h>
 
 #include "Threefry.h"
+#include "bitset.h"
 
 constexpr int8_t CODON_SIZE = 3;
 
@@ -41,13 +42,17 @@ class Dna {
   void save(gzFile backup_file);
   void load(gzFile backup_file);
 
-  void set(int pos, char c);
+/*
+  inline void set(size_t pos, bool bit) {
+    seq_.set(pos, bit);
+  }
+*/
 
   /// Remove the DNA inbetween pos_1 and pos_2
   void remove(int pos_1, int pos_2);
 
   /// Insert a sequence of a given length at a given position into the DNA of the Organism
-  void insert(int pos, std::vector<char> seq);
+  void insert(int pos, const own_dynamic_bitset& seq);
 
   /// Insert a sequence of a given length at a given position into the DNA of the Organism
   void insert(int pos, Dna* seq);
@@ -66,5 +71,5 @@ class Dna {
 
   int codon_at(int pos);
 
-  std::vector<char> seq_;
+  own_dynamic_bitset seq_;
 };
