@@ -26,31 +26,28 @@ class Dna {
  public:
   Dna() = default;
 
-  Dna(const Dna& clone);
+  inline Dna(const Dna& clone) : seq_(clone.seq_) { }
 
   Dna(int length, Threefry::Gen& rng);
 
-  Dna(char* genome, int length);
+  inline Dna(char* genome, int length) { strcpy(seq_.data(), genome); }
 
-  Dna(int length);
+  Dna(int length) : seq_(length) { }
 
   ~Dna() = default;
 
-  int length() const;
+  inline int length() const { return seq_.size(); };
 
   void save(gzFile backup_file);
   void load(gzFile backup_file);
 
-  void set(int pos, char c);
+  inline void set(int pos, char c) { seq_[pos] = c; };
 
   /// Remove the DNA inbetween pos_1 and pos_2
   void remove(int pos_1, int pos_2);
 
   /// Insert a sequence of a given length at a given position into the DNA of the Organism
-  void insert(int pos, std::vector<char> seq);
-
-  /// Insert a sequence of a given length at a given position into the DNA of the Organism
-  void insert(int pos, Dna* seq);
+  void insert(int pos, const std::vector<char>& seq);
 
   void do_switch(int pos);
 

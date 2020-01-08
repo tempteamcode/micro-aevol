@@ -5,25 +5,11 @@
 #include "Dna.h"
 #include "ExpManager.h"
 
-Dna::Dna(const Dna& clone) : seq_(clone.seq_) {
-}
-
 Dna::Dna(int length, Threefry::Gen& rng) : seq_(length) {
   // Generate a random genome
   for (int32_t i = 0; i < length; i++) {
     seq_[i] = '0' + rng.random(NB_BASE);
   }
-}
-
-Dna::Dna(char* genome, int length) : seq_(length) {
-  strcpy(seq_.data(), genome);
-}
-
-Dna::Dna(int length) : seq_(length) {
-}
-
-int Dna::length() const {
-  return seq_.size();
 }
 
 void Dna::save(gzFile backup_file) {
@@ -40,10 +26,6 @@ void Dna::load(gzFile backup_file) {
     gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
 
     seq_ = std::vector<char>(tmp_seq, tmp_seq+dna_length);
-}
-
-void Dna::set(int pos, char c) {
-  seq_[pos] = c;
 }
 
 /**
@@ -64,25 +46,11 @@ void Dna::remove(int pos_1, int pos_2) {
  * @param seq : the sequence itself
  * @param seq_length : the size of the sequence
  */
-void Dna::insert(int pos, std::vector<char> seq) {
+void Dna::insert(int pos, const std::vector<char>& seq) {
 // Insert sequence 'seq' at position 'pos'
   assert(pos >= 0 && pos < seq_.size());
 
   seq_.insert(seq_.begin() + pos, seq.begin(), seq.end());
-}
-
-/**
- * Insert a sequence of a given length at a given position into the DNA of the Organism
- *
- * @param pos : where to insert the sequence
- * @param seq : the sequence itself
- * @param seq_length : the size of the sequence
- */
-void Dna::insert(int pos, Dna* seq) {
-// Insert sequence 'seq' at position 'pos'
-  assert(pos >= 0 && pos < seq_.size());
-
-  seq_.insert(seq_.begin() + pos, seq->seq_.begin(), seq->seq_.end());
 }
 
 void Dna::do_switch(int pos) {
@@ -92,9 +60,6 @@ void Dna::do_switch(int pos) {
 
 void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
   // Duplicate segment [pos_1; pos_2[ and insert the duplicate before pos_3
-  char* duplicate_segment = NULL;
-
-  int32_t seg_length;
 
   if (pos_1 < pos_2) {
     //
