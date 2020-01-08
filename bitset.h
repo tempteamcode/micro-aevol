@@ -1,4 +1,5 @@
 #include <vector>
+#include <utility>
 
 template <typename item_t>
 class uninitialized_vector
@@ -7,7 +8,41 @@ public:
   uninitialized_vector(size_t size = 0) : used(size), allocated(size) { if (allocated > 0) data = new item_t[allocated]; }
   ~uninitialized_vector() { if (allocated > 0) delete[] data; }
   
-  uninitialized_vector (const uninitialized_vector& other) : used(other.size), allocated(other.size)
+  uninitialized_vector& operator=(const uninitialized_vector& other)
+  {
+    if (&other == this) return *this;
+    used = other.used;
+    allocated = other.used;
+    
+    if (allocated > 0) {
+      data = new item_t[allocated];
+      
+      if (std::is_trivially_copyable<item_t>::value) {
+        std::memcpy(data, other.data, used);
+      } else {
+        item_t* dest = data;
+        item_t* src = other.data;
+        size_t count = used;
+        while (count --> 0) *dest++ = *src++;
+      }
+    }
+    
+    return *this;
+  }
+  
+  uninitialized_vector& operator=(uninitialized_vector&& other)
+  {
+    used = other.used;
+    allocated = other.allocated;
+    data = other.data;
+    
+    other.used = 0;
+    other.allocated = 0;
+    
+    return *this;
+  }
+  
+  uninitialized_vector (const uninitialized_vector& other) : used(other.used), allocated(other.used)
   {
     if (allocated > 0) {
       data = new item_t[allocated];
@@ -75,7 +110,7 @@ public:
   item_t* data;
 };
 
-class better_bitset
+class own_dynamic_bitset
 {
 public:
   typedef unsigned int int_t;
@@ -83,45 +118,146 @@ public:
   
   static constexpr size_t sizeof_int = sizeof(int_t);
   
-  better_bitset() = default;
-  ~better_bitset() = default;
+  own_dynamic_bitset() = default;
+  ~own_dynamic_bitset() = default;
   
-  inline better_bitset(size_t size) : used(size / sizeof_int + 1), data(used) { }
+  inline own_dynamic_bitset(size_t size) : used(size), data(used / sizeof_int + 1) { }
+  
+  own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end) : used(end - begin), data(used / sizeof_int + 1)
+  {
+    for (int pos = 0; pos < used; pos++) {
+      set(pos, other.test(pos + begin));
+    }
+  }
   
   inline size_t size() const { return used; }
   
   template<typename function_t>
   void generate(size_t size, function_t generator)
   {
-    used = (size / sizeof_int) + 1;
-    data.redim_discard(used);
+    used = size;
+    data.redim_discard(size / sizeof_int + 1);
+    
+    // FIXME to improve
+    for (int pos = 0; pos < size; pos++) {
+      set(pos, generator());
+    }
   }
   
   
-  const bool operator[](size_t pos)
+  inline bool test(size_t pos) const
   {
-    throw "better_bitset operator[]"; // TODO
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    
+    return (data[index] & mask != 0);
+  }
+  inline void set(size_t pos)
+  {
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    
+    data[index] |= mask;
+  }
+  inline void set(size_t pos, bool value)
+  {
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    
+    if (value) data[index] |= mask;
+    else data[index] &= ~mask;
+  }
+  inline void reset(size_t pos)
+  {
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    
+    data[index] &= ~mask;
+  }
+  inline void flip(size_t pos)
+  {
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    
+    data[index] ^= mask;
   }
   
-  bool test(size_t pos);
-  void set(size_t pos);
-  void set(size_t pos, bool value);
-  void reset(size_t pos);
+  inline bool operator[](size_t pos) const
+  {
+    return test(pos);
+  }
   
   
   void range_erase(size_t begin, size_t end)
   {
-    throw "better_bitset range_erase"; // TODO
+    //FIXME to improve
+    
+    own_dynamic_bitset result(used - (end - begin));
+    
+    int pos_dest = 0;
+    for (int pos = 0; pos < used; pos++)
+    {
+      if (pos == begin) { pos = end - 1; continue; }
+      result.set(pos_dest++, test(pos));
+    }
+    
+    std::swap(*this, result);
   }
   
-  void range_move(size_t begin, size_t end, size_t pos)
+  void range_insert(size_t pos_insert, const own_dynamic_bitset& other)
   {
-    throw "better_bitset range_move"; // TODO
+    //FIXME to improve
+    
+    own_dynamic_bitset result(used + other.used);
+    
+    int pos_dest = 0;
+    for (int pos = 0; ; pos++)
+    {
+      if (pos == pos_insert) {
+        for (int pos_other = 0; pos_other < other.used; pos_other++) {
+          result.set(pos_dest++, other.test(pos_other));
+        }
+      }
+      if (pos == other.used) break;
+      result.set(pos_dest++, test(pos));
+    }
+    
+    std::swap(*this, result);
   }
   
-  void range_insert(const better_bitset&, size_t pos)
+  
+  void import_string(const char* bits, size_t size)
   {
-    throw "better_bitset range_insert"; // TODO
+    used = size;
+    data.redim_discard(size / sizeof_int + 1);
+    
+    //FIXME to improve
+    for (size_t pos = 0; pos < size; pos++)
+    {
+      set(pos, (*bits++ != '0'));
+    } 
+  }
+  
+  std::string export_string() const
+  {
+    std::string result;
+    char* buffer = new char[used + 1];
+    
+    //FIXME to improve
+    for (size_t pos = 0; pos < used; pos++)
+    {
+      buffer[pos] = test(pos) ? '1' : '0';
+    }
+    
+    buffer[used] = '\0';
+    result = buffer;
+    delete[] buffer;
+    return result;
   }
   
 private:
