@@ -58,44 +58,6 @@ void Dna::do_switch(int pos) {
   else seq_[pos] = '0';
 }
 
-void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
-  // Duplicate segment [pos_1; pos_2[ and insert the duplicate before pos_3
-
-  if (pos_1 < pos_2) {
-    //
-    //       pos_1         pos_2                   -> 0-
-    //         |             |                   -       -
-    // 0--------------------------------->      -         -
-    //         ===============                  -         - pos_1
-    //           tmp (copy)                      -       -
-    //                                             -----      |
-    //                                             pos_2    <-'
-    //
-    std::vector<char> seq_dupl =
-        std::vector<char>(seq_.begin() + pos_1, seq_.begin() + pos_2);
-
-    insert(pos_3, seq_dupl);
-  } else { // if (pos_1 >= pos_2)
-    // The segment to duplicate includes the origin of replication.
-    // The copying process will be done in two steps.
-    //
-    //                                            ,->
-    //    pos_2                 pos_1            |      -> 0-
-    //      |                     |                   -       - pos_2
-    // 0--------------------------------->     pos_1 -         -
-    // ======                     =======            -         -
-    //  tmp2                        tmp1              -       -
-    //                                                  -----
-    //
-    //
-    std::vector<char>
-        seq_dupl = std::vector<char>(seq_.begin() + pos_1, seq_.end());
-    seq_dupl.insert(seq_dupl.end(), seq_.begin(), seq_.begin() + pos_2);
-
-    insert(pos_3, seq_dupl);
-  }
-}
-
 int Dna::promoter_at(int pos) {
   int prom_dist[22];
 

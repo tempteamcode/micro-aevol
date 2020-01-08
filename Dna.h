@@ -51,8 +51,6 @@ class Dna {
 
   void do_switch(int pos);
 
-  void do_duplication(int pos_1, int pos_2, int pos_3);
-
   int promoter_at(int pos);
 
   int terminator_at(int pos);
