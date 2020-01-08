@@ -144,7 +144,6 @@ public:
     }
   }
   
-  
   inline bool test(size_t pos) const
   {
     size_t index = pos / sizeof_int;
