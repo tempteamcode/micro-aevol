@@ -38,8 +38,9 @@
 #include "RNA.h"
 #include "Protein.h"
 #include "Dna.h"
+#include "ExpManager.h"
 
-class ExpManager;
+//class ExpManager;
 
 /**
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
@@ -47,10 +48,39 @@ class ExpManager;
 class Organism {
 
 public:
-    Organism(ExpManager *exp_m, int length, int indiv_id);
 
-    /// Create an organism with a given genome
-    Organism(ExpManager *exp_m, char *genome, int indiv_id);
+/**
+ * Constructor to generate a random organism (i.e. an organism with a random DNA)
+ *
+ * @param exp_m : Related ExpManager object
+ * @param length : Length of the generated random DNA
+ * @param indiv_id : Unique Identification Number
+ */
+Organism(ExpManager *exp_m, int length, int indiv_id)
+: exp_m_(exp_m)
+, rna_count_(0)
+, dna_(length, std::move(exp_m->rng_->gen(indiv_id, Threefry::MUTATION)))
+, parent_length_(length)
+, indiv_id_(indiv_id)
+{
+}
+
+/**
+ * Create an organism with a given genome
+ *
+ * @param exp_m : Related ExpManager object
+ * @param length : Length of the generated random DNA
+ * @param genome : Genome to assign to the organism
+ * @param indiv_id : Unique Identification Number
+ */
+Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
+: exp_m_(exp_m)
+, rna_count_(0)
+, parent_length_(length)
+, dna_(genome, length)
+, indiv_id_(indiv_id)
+{
+}
 
     Organism(ExpManager *exp_m, const std::shared_ptr<Organism> &clone);
 
@@ -62,7 +92,7 @@ public:
 
     void load(gzFile backup_file);
 
-    int length() { return dna_->length(); };
+    inline int length() const { return dna_.length(); };
 
     void apply_mutations();
 
@@ -84,7 +114,7 @@ public:
     double fitness;
     double metaerror;
 
-    Dna *dna_;
+    Dna dna_;
     int parent_length_;
 
     int indiv_id_;

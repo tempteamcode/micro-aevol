@@ -386,6 +386,11 @@ ExpManager::~ExpManager() {
     delete[] target;
 }
 
+void ExpManager::apply_mutation(int indiv_id)
+{
+    internal_organisms_[indiv_id]->apply_mutations();
+}
+
 /**
  * Execute a generation of the simulation for all the Organisms
  *
@@ -457,14 +462,14 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 void ExpManager::start_stop_RNA(int indiv_id) {
     for (int dna_pos = 0; dna_pos < internal_organisms_[indiv_id]->length(); dna_pos++) {
         if (internal_organisms_[indiv_id]->length() >= PROM_SIZE) {
-            int dist_lead = internal_organisms_[indiv_id]->dna_->promoter_at(dna_pos);
+            int dist_lead = internal_organisms_[indiv_id]->dna_.promoter_at(dna_pos);
 
             if (dist_lead <= 4) {
                 internal_organisms_[indiv_id]->add_new_promoter(dna_pos, dist_lead);
             }
 
             // Computing if a terminator exists at that position
-            int dist_term_lead = internal_organisms_[indiv_id]->dna_->terminator_at(dna_pos);
+            int dist_term_lead = internal_organisms_[indiv_id]->dna_.terminator_at(dna_pos);
 
             if (dist_term_lead == 4) {
                 internal_organisms_[indiv_id]->terminators.insert(
@@ -500,7 +505,7 @@ void ExpManager::opt_prom_compute_RNA(int indiv_id) {
             bool terminator_found = false;
 
             while (!terminator_found) {
-                int term_dist_leading = internal_organisms_[indiv_id]->dna_->terminator_at(cur_pos);
+                int term_dist_leading = internal_organisms_[indiv_id]->dna_.terminator_at(cur_pos);
 
                 if (term_dist_leading == 4)
                     terminator_found = true;
@@ -615,7 +620,7 @@ void ExpManager::start_protein(int indiv_id) {
 
             while (c_pos != internal_organisms_[indiv_id]->rnas[rna_idx]->end) {
 
-                if (internal_organisms_[indiv_id]->dna_->shine_dal_start(c_pos)) {
+                if (internal_organisms_[indiv_id]->dna_.shine_dal_start(c_pos)) {
                     internal_organisms_[indiv_id]->rnas[rna_idx]->start_prot.push_back(c_pos);
                 }
 
@@ -669,7 +674,7 @@ void ExpManager::compute_protein(int indiv_id) {
 
 
             while (internal_organisms_[indiv_id]->rnas[rna_idx]->length - transcription_length >= 3) {
-                if (internal_organisms_[indiv_id]->dna_->protein_stop(current_position)) {
+                if (internal_organisms_[indiv_id]->dna_.protein_stop(current_position)) {
                     int prot_length;
 
                     int protein_end = current_position + 2 >= internal_organisms_[indiv_id]->length() ?
@@ -729,7 +734,7 @@ void ExpManager::translate_protein(int indiv_id, double w_max) {
             //printf("Codon list : ");
             while (count_loop < internal_organisms_[indiv_id]->proteins[protein_idx]->protein_length / 3 &&
                    codon_idx < 64) {
-                codon_list[codon_idx] = internal_organisms_[indiv_id]->dna_->codon_at(c_pos);
+                codon_list[codon_idx] = internal_organisms_[indiv_id]->dna_.codon_at(c_pos);
                 //printf("%d ",codon_list[codon_idx]);
                 codon_idx++;
 

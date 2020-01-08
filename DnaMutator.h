@@ -31,7 +31,6 @@
 #include <list>
 #include <vector>
 
-#include "Organism.h"
 #include "Threefry.h"
 #include "MutationEvent.h"
 

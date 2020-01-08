@@ -26,6 +26,8 @@
 
 
 #include "Stats.h"
+#include "ExpManager.h"
+#include "Organism.h"
 
 /**
  * Create the data structure and open the file for the statistics of a simulation

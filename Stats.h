@@ -32,8 +32,8 @@
 #include <fstream>
 #include <limits>
 
-#include "Organism.h"
-#include "ExpManager.h"
+//#include "ExpManager.h"
+class ExpManager;
 
 /**
  * Class to manage and generate the Stats (and the related file) of a simulation

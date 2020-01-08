@@ -35,56 +35,18 @@
 using namespace std;
 
 /**
- * Constructor to generate a random organism (i.e. an organism with a random DNA)
- *
- * @param exp_m : Related ExpManager object
- * @param length : Length of the generated random DNA
- * @param indiv_id : Unique Identification Number
- */
-Organism::Organism(ExpManager *exp_m, int length, int indiv_id) {
-    exp_m_ = exp_m;
-
-    rna_count_ = 0;
-
-    auto rng = exp_m->rng_->gen(indiv_id, Threefry::MUTATION);
-    dna_ = new Dna(length, rng);
-    parent_length_ = length;
-    indiv_id_ = indiv_id;
-}
-
-/**
- * Create an organism with a given genome
- *
- * @param exp_m : Related ExpManager object
- * @param genome : Genome to assign to the organism
- * @param indiv_id : Unique Identification Number
- */
-Organism::Organism(ExpManager *exp_m, char *genome, int indiv_id) {
-    exp_m_ = exp_m;
-
-    rna_count_ = 0;
-
-    dna_ = new Dna(genome, strlen(genome));
-    parent_length_ = strlen(genome);
-    indiv_id_ = indiv_id;
-
-}
-
-/**
  * Constructor to create a clone of a given Organism
  *
  * @param exp_m : Related ExpManager object
  * @param clone : The organism to clone
  */
-Organism::Organism(ExpManager *exp_m, const std::shared_ptr<Organism> &clone) {
-    exp_m_ = exp_m;
-
-    rna_count_ = 0;
-
-    parent_length_ = clone->length();
-    dna_ = new Dna(*(clone->dna_));
-
-    promoters_ = clone->promoters_;
+Organism::Organism(ExpManager *exp_m, const std::shared_ptr<Organism> &clone)
+: exp_m_(exp_m)
+, rna_count_(0)
+, parent_length_(clone->length())
+, dna_(clone->dna_)
+, promoters_(clone->promoters_)
+{
 }
 
 /**
@@ -93,11 +55,9 @@ Organism::Organism(ExpManager *exp_m, const std::shared_ptr<Organism> &clone) {
  * @param exp_m : Related ExpManager object
  * @param backup_file : gzFile to read from
  */
-Organism::Organism(ExpManager *exp_m, gzFile backup_file) {
-    exp_m_ = exp_m;
-
-    rna_count_ = 0;
-
+Organism::Organism(ExpManager *exp_m, gzFile backup_file)
+: exp_m_(exp_m), rna_count_(0)
+{
     load(backup_file);
 }
 
@@ -116,8 +76,6 @@ Organism::~Organism() {
     proteins.clear();
 
     terminators.clear();
-
-    delete dna_;
 }
 
 /**
@@ -132,7 +90,7 @@ void Organism::save(gzFile backup_file) {
 
     gzwrite(backup_file, &parent_length_, sizeof(parent_length_));
 
-    dna_->save(backup_file);
+    dna_.save(backup_file);
 }
 
 /**
@@ -147,8 +105,8 @@ void Organism::load(gzFile backup_file) {
 
     gzread(backup_file, &parent_length_, sizeof(parent_length_));
 
-    dna_ = new Dna();
-    dna_->load(backup_file);
+    dna_ = Dna();
+    dna_.load(backup_file);
 }
 
 /**
@@ -199,7 +157,7 @@ void Organism::compute_protein_stats() {
  * @return
  */
 bool Organism::do_switch(int pos) {
-    dna_->do_switch(pos);
+    dna_.do_switch(pos);
 
     // Remove promoters containing the switched base
     remove_promoters_around(pos, mod(pos + 1, length()));
@@ -235,9 +193,9 @@ Optimize promoters search
 
 
 void Organism::remove_promoters_around(int32_t pos) {
-    if (dna_->length() >= PROM_SIZE) {
+    if (dna_.length() >= PROM_SIZE) {
         remove_promoters_starting_between(mod(pos - PROM_SIZE + 1,
-                                              dna_->length()),
+                                              dna_.length()),
                                           pos);
     } else {
         remove_all_promoters();
@@ -245,9 +203,9 @@ void Organism::remove_promoters_around(int32_t pos) {
 }
 
 void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
-    if (mod(pos_1 - pos_2, dna_->length()) >= PROM_SIZE) {
+    if (mod(pos_1 - pos_2, dna_.length()) >= PROM_SIZE) {
         remove_promoters_starting_between(mod(pos_1 - PROM_SIZE + 1,
-                                              dna_->length()),
+                                              dna_.length()),
                                           pos_2);
     } else {
         remove_all_promoters();
@@ -255,17 +213,17 @@ void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
 }
 
 void Organism::look_for_new_promoters_around(int32_t pos_1, int32_t pos_2) {
-    if (dna_->length() >= PROM_SIZE) {
+    if (dna_.length() >= PROM_SIZE) {
         look_for_new_promoters_starting_between(
                 mod(pos_1 - PROM_SIZE + 1,
-                    dna_->length()), pos_2);
+                    dna_.length()), pos_2);
     }
 }
 
 void Organism::look_for_new_promoters_around(int32_t pos) {
-    if (dna_->length() >= PROM_SIZE) {
+    if (dna_.length() >= PROM_SIZE) {
         look_for_new_promoters_starting_between(
-                mod(pos - PROM_SIZE + 1, dna_->length()),
+                mod(pos - PROM_SIZE + 1, dna_.length()),
                 pos);
     }
 }
@@ -298,7 +256,7 @@ void Organism::remove_promoters_starting_before(int32_t pos) {
 
 /** LOOK **/
 void Organism::locate_promoters() {
-    look_for_new_promoters_starting_between(0, dna_->length());
+    look_for_new_promoters_starting_between(0, dna_.length());
 }
 
 void Organism::add_new_promoter(int32_t position, int8_t error) {
@@ -310,8 +268,8 @@ void Organism::add_new_promoter(int32_t position, int8_t error) {
 
 void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t pos_2) {
     // When pos_1 > pos_2, we will perform the search in 2 steps.
-    // As positions  0 and dna_->length() are equivalent, it's preferable to
-    // keep 0 for pos_1 and dna_->length() for pos_2.
+    // As positions  0 and dna_.length() are equivalent, it's preferable to
+    // keep 0 for pos_1 and dna_.length() for pos_2.
 
     if (pos_1 >= pos_2) {
         look_for_new_promoters_starting_after(pos_1);
@@ -321,7 +279,7 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
     // Hamming distance of the sequence from the promoter consensus
 
     for (int32_t i = pos_1; i < pos_2; i++) {
-        int8_t dist = dna_->promoter_at(i);
+        int8_t dist = dna_.promoter_at(i);
 
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);
@@ -330,8 +288,8 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
 }
 
 void Organism::look_for_new_promoters_starting_after(int32_t pos) {
-    for (int32_t i = pos; i < dna_->length(); i++) {
-        int dist = dna_->promoter_at(i);
+    for (int32_t i = pos; i < dna_.length(); i++) {
+        int dist = dna_.promoter_at(i);
 
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);
@@ -344,7 +302,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
 
     for (int32_t i = 0; i < pos; i++) {
 
-        int dist = dna_->promoter_at(i);
+        int dist = dna_.promoter_at(i);
 
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);

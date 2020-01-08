@@ -91,7 +91,7 @@ class ExpManager {
         void prepare_mutation(int indiv_id);
         void selection(int indiv_id);
 
-        inline void apply_mutation(int indiv_id) { internal_organisms_[indiv_id]->apply_mutations(); }
+        void apply_mutation(int indiv_id);
 
         void start_stop_RNA(int indiv_id);
         void compute_RNA(int indiv_id);

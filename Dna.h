@@ -19,8 +19,6 @@ constexpr const char* PROM_SEQ = "0101011001110010010110";
 constexpr const char* SHINE_DAL_SEQ = "011011000";
 constexpr const char* PROTEIN_END = "001"; // CODON_STOP
 
-class ExpManager;
-
 class Dna {
 
  public:
@@ -28,7 +26,7 @@ class Dna {
 
   inline Dna(const Dna& clone) : seq_(clone.seq_) { }
 
-  Dna(int length, Threefry::Gen& rng);
+  Dna(int length, Threefry::Gen&& rng);
 
   inline Dna(char* genome, int length) { strcpy(seq_.data(), genome); }
 
