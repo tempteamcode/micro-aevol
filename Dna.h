@@ -20,8 +20,7 @@ constexpr const char* SHINE_DAL_SEQ = "011011000";
 constexpr const char* PROTEIN_END = "001"; // CODON_STOP
 
 class Dna {
-
- public:
+public:
   Dna() = default;
 
   inline Dna(const Dna& clone) : seq_(clone.seq_) { }
@@ -59,5 +58,7 @@ class Dna {
 
   int codon_at(int pos);
 
+public:
   std::vector<char> seq_;
 };
+

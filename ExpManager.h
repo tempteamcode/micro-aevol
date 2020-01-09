@@ -111,7 +111,9 @@ class ExpManager {
         std::shared_ptr<Organism> best_indiv;
 
         int* next_generation_reproducer_;
+private:
         DnaMutator** dna_mutator_array_;
+public:
 
         int nb_indivs_;
 

@@ -343,9 +343,8 @@ void ExpManager::load(int t) {
  * @param indiv_id : Organism unique id
  */
 void ExpManager::prepare_mutation(int indiv_id) {
-    Threefry::Gen *rng = new Threefry::Gen(std::move(rng_->gen(indiv_id, Threefry::MUTATION)));
     dna_mutator_array_[indiv_id] = new DnaMutator(
-            rng,
+            std::move(Threefry::Gen(std::move(rng_->gen(indiv_id, Threefry::MUTATION)))),
             prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
             mutation_rate_, indiv_id);
     dna_mutator_array_[indiv_id]->generate_mutations();
@@ -388,7 +387,7 @@ ExpManager::~ExpManager() {
 
 void ExpManager::apply_mutation(int indiv_id)
 {
-    internal_organisms_[indiv_id]->apply_mutations();
+    internal_organisms_[indiv_id]->apply_mutations(dna_mutator_array_[indiv_id]);
 }
 
 /**
@@ -483,7 +482,6 @@ void ExpManager::start_stop_RNA(int indiv_id) {
  * Optimize version that do not need to search the whole Dna for promoters
  */
 void ExpManager::opt_prom_compute_RNA(int indiv_id) {
-    if (dna_mutator_array_[indiv_id]->hasMutate()) {
         internal_organisms_[indiv_id]->proteins.clear();
         internal_organisms_[indiv_id]->rnas.clear();
         internal_organisms_[indiv_id]->terminators.clear();
@@ -547,7 +545,6 @@ void ExpManager::opt_prom_compute_RNA(int indiv_id) {
                 }
             }
         }
-    }
 }
 
 
@@ -1097,8 +1094,7 @@ void ExpManager::selection(int indiv_id) {
 void ExpManager::run_evolution(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         // dna_mutator_array_ is set only to have has_mutate() true so that RNA, protein and phenotype will be computed
-        dna_mutator_array_[indiv_id] = new DnaMutator(nullptr, 0, 0, indiv_id);
-        dna_mutator_array_[indiv_id]->setMutate(true);
+        dna_mutator_array_[indiv_id] = nullptr;
 
         opt_prom_compute_RNA(indiv_id);
 
@@ -1110,8 +1106,6 @@ void ExpManager::run_evolution(int nb_gen) {
         compute_phenotype(indiv_id);
 
         compute_fitness(indiv_id, selection_pressure_);
-
-        delete dna_mutator_array_[indiv_id];
     }
 
     printf("Running evolution from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
@@ -1148,11 +1142,9 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
   cout << "Transfer done in " << duration_transfer_in << endl;
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        auto rng = std::move(rng_->gen(indiv_id, Threefry::MUTATION));
-
         delete dna_mutator_array_[indiv_id];
         dna_mutator_array_[indiv_id] = new DnaMutator(
-                &rng,
+                std::move(rng_->gen(indiv_id, Threefry::MUTATION)),
                 prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
                 mutation_rate_, indiv_id);
         dna_mutator_array_[indiv_id]->setMutate(true);

@@ -94,7 +94,7 @@ Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
 
     inline int length() const { return dna_.length(); };
 
-    void apply_mutations();
+    void apply_mutations(DnaMutator* dna_mutator);
 
     void reset_mutation_stats();
 

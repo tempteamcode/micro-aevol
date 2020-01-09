@@ -29,31 +29,11 @@
 #include "AeTime.h"
 
 /**
- * Constructor for DnaMutator class
- *
- * Generate mutations of the DNA of an Organism
- *
- * @param mut_prng : PRNG to simulate the mutation
- * @param length  : Size of the DNA at the initialization
- * @param mutation_rate : Mutation rate of the organisms
- * @param indiv_id : Unique identification number for the Organism
- */
-DnaMutator::DnaMutator(Threefry::Gen* mut_prng,
-      int length,
-      double mutation_rate, int indiv_id) {
-  mut_prng_ = mut_prng;
-  length_ = length;
-  mutation_rate_ = mutation_rate;
-
-  id_ = indiv_id;
-}
-
-/**
  * Generate both type of the mutations (see below)
  */
 void DnaMutator::generate_mutations() {
     hasMutate_ = false;
-    nb_swi_ = mut_prng_->binomial_random(length_, mutation_rate_);
+    nb_swi_ = mut_prng_.binomial_random(length_, mutation_rate_);
     nb_mut_ = nb_swi_;
     cpt_mut_ = nb_mut_;
 
@@ -78,13 +58,13 @@ MutationEvent* DnaMutator::generate_next_mutation(int length) {
   MutationEvent* mevent = nullptr;
 
   if (cpt_mut_>0) {
-    random_value = mut_prng_->random(cpt_mut_);
+    random_value = mut_prng_.random(cpt_mut_);
     cpt_mut_--;
 
     if (random_value < nb_swi_) {
       nb_swi_--;
 
-      int pos = mut_prng_->random(length);
+      int pos = mut_prng_.random(length);
 
       mevent = new MutationEvent();
       mevent->switch_pos(pos);
@@ -95,3 +75,4 @@ MutationEvent* DnaMutator::generate_next_mutation(int length) {
 
   return mevent;
 };
+

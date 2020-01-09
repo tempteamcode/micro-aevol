@@ -41,33 +41,44 @@
 class DnaMutator {
 public:
 
-    DnaMutator(Threefry::Gen *mut_prng, int length,
-               double mutation_rate,
-               int indiv_id);
+/**
+ * Constructor for DnaMutator class
+ *
+ * Generate mutations of the DNA of an Organism
+ *
+ * @param mut_prng : PRNG to simulate the mutation
+ * @param length  : Size of the DNA at the initialization
+ * @param mutation_rate : Mutation rate of the organisms
+ * @param indiv_id : Unique identification number for the Organism
+ */
+DnaMutator(Threefry::Gen&& mut_prng, int length, double mutation_rate, int indiv_id)
+: mut_prng_(std::move(mut_prng))
+, length_(length)
+, mutation_rate_(mutation_rate)
+, id_(indiv_id)
+{
+}
 
     ~DnaMutator() {
         for (auto repl : mutation_list_) {
             delete repl;
         }
         mutation_list_.clear();
-
-        if (mut_prng_) delete mut_prng_;
     }
 
     void generate_mutations();
 
     MutationEvent *generate_next_mutation(int length);
 
-    bool mutation_available() { return (cpt_mut_ > 0); }
+    bool mutation_available() const { return (cpt_mut_ > 0); }
 
     std::list<MutationEvent *> mutation_list_;
 
-    bool hasMutate() { return hasMutate_; }
+    inline bool hasMutate() const { return hasMutate_; }
 
     void setMutate(bool mutate) { hasMutate_ = mutate; }
 
     static int mod(int a, int b) {
-
         assert(b > 0);
 
         while (a < 0) a += b;
@@ -78,7 +89,7 @@ public:
 
 // private:
     int id_;
-    Threefry::Gen *mut_prng_;
+    Threefry::Gen mut_prng_;
     int length_;
 
     double mutation_rate_;

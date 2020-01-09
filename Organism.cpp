@@ -172,8 +172,8 @@ bool Organism::do_switch(int pos) {
 /**
  * Apply all the mutation events of the organism on its DNA
  */
-void Organism::apply_mutations() {
-    auto mutation_list = exp_m_->dna_mutator_array_[indiv_id_]->mutation_list_;
+void Organism::apply_mutations(DnaMutator* dna_mutator) {
+    auto mutation_list = dna_mutator->mutation_list_;
 
     for (const auto mutation: mutation_list) {
         switch (mutation->type()) {
