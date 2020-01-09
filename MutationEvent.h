@@ -34,30 +34,18 @@
 
 enum MutationEventType {
     DO_SWITCH           = 0,
-  NONE
+    NONE
 };
 
 /**
  * Mutation event class
  */
 
-class MutationEvent {
+struct MutationEvent {
+    MutationEvent(int32_t pos) : type(DO_SWITCH), pos_1(pos) { }
 
- public:
-    MutationEvent() = default;
-    ~MutationEvent() = default;
-
-    void switch_pos(int32_t pos);
-
-
-    int32_t type() { return type_; };
-
-    int32_t pos_1() { return pos_1_; }
-
- private:
-    int32_t type_;
-
-    int32_t pos_1_;
+    const int32_t type;
+    const int32_t pos_1;
 };
 
 

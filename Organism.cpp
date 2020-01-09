@@ -40,12 +40,12 @@ using namespace std;
  * @param exp_m : Related ExpManager object
  * @param clone : The organism to clone
  */
-Organism::Organism(ExpManager *exp_m, const std::shared_ptr<Organism> &clone)
+Organism::Organism(ExpManager *exp_m, const Organism& clone)
 : exp_m_(exp_m)
 , rna_count_(0)
-, parent_length_(clone->length())
-, dna_(clone->dna_)
-, promoters_(clone->promoters_)
+, parent_length_(clone.length())
+, dna_(clone.dna_)
+, promoters_(clone.promoters_)
 {
 }
 
@@ -176,12 +176,10 @@ void Organism::apply_mutations(DnaMutator* dna_mutator) {
     auto mutation_list = dna_mutator->mutation_list_;
 
     for (const auto mutation: mutation_list) {
-        switch (mutation->type()) {
-            case DO_SWITCH:
-                do_switch(mutation->pos_1());
-                nb_swi_++;
-                nb_mut_++;
-                break;
+        if (mutation.type == DO_SWITCH) {
+            do_switch(mutation.pos_1);
+            nb_swi_++;
+            nb_mut_++;
         }
     }
 

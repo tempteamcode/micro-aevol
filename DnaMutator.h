@@ -28,7 +28,6 @@
 #ifndef RAEVOL_CUDA_DNAMUTATOR_H
 #define RAEVOL_CUDA_DNAMUTATOR_H
 
-#include <list>
 #include <vector>
 
 #include "Threefry.h"
@@ -59,20 +58,13 @@ DnaMutator(Threefry::Gen&& mut_prng, int length, double mutation_rate, int indiv
 {
 }
 
-    ~DnaMutator() {
-        for (auto repl : mutation_list_) {
-            delete repl;
-        }
-        mutation_list_.clear();
-    }
-
     void generate_mutations();
 
-    MutationEvent *generate_next_mutation(int length);
+    void generate_next_mutation(int length);
 
     bool mutation_available() const { return (cpt_mut_ > 0); }
 
-    std::list<MutationEvent *> mutation_list_;
+    std::vector<MutationEvent> mutation_list_;
 
     inline bool hasMutate() const { return hasMutate_; }
 

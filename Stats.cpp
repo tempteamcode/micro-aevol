@@ -140,23 +140,23 @@ Stats::Stats(ExpManager* exp_m, int generation, bool best_or_not) {
 /**
  * Compute the statistics for the best organism
  */
-void Stats::compute_best() {
+void Stats::compute_best(const Organism& best_indiv) {
     is_indiv_ = true;
 
-    fitness_ = exp_m_->best_indiv->fitness;
-    metabolic_error_  = exp_m_->best_indiv->metaerror;
+    fitness_ = best_indiv.fitness;
+    metabolic_error_  = best_indiv.metaerror;
 
-    amount_of_dna_ = exp_m_->best_indiv->length();
+    amount_of_dna_ = best_indiv.length();
 
-    nb_coding_rnas_ = exp_m_->best_indiv->nb_coding_RNAs;
-    nb_non_coding_rnas_ = exp_m_->best_indiv->nb_non_coding_RNAs;
+    nb_coding_rnas_ = best_indiv.nb_coding_RNAs;
+    nb_non_coding_rnas_ = best_indiv.nb_non_coding_RNAs;
 
-    nb_functional_genes_ = exp_m_->best_indiv->nb_func_genes;
-    nb_non_functional_genes_ = exp_m_->best_indiv->nb_non_func_genes;
+    nb_functional_genes_ = best_indiv.nb_func_genes;
+    nb_non_functional_genes_ = best_indiv.nb_non_func_genes;
 
 
-    nb_mut_ = exp_m_->best_indiv->nb_mut_;
-    nb_switch_ = exp_m_->best_indiv->nb_swi_;
+    nb_mut_ = best_indiv.nb_mut_;
+    nb_switch_ = best_indiv.nb_swi_;
 
     is_computed_ = true;
 }
@@ -180,19 +180,21 @@ void Stats::compute_average() {
     mean_nb_switch_ = 0;
     
     for (int indiv_id = 0; indiv_id < pop_size_; indiv_id++) {
-        mean_fitness_ += exp_m_->prev_internal_organisms_[indiv_id]->fitness;
-        mean_metabolic_error_ += exp_m_->prev_internal_organisms_[indiv_id]->metaerror;
+        const Organism& indiv = *(exp_m_->prev_internal_organisms_[indiv_id].get());
 
-        mean_amount_of_dna_ += exp_m_->prev_internal_organisms_[indiv_id]->length();
+        mean_fitness_ += indiv.fitness;
+        mean_metabolic_error_ += indiv.metaerror;
 
-        mean_nb_coding_rnas_ += exp_m_->prev_internal_organisms_[indiv_id]->nb_coding_RNAs;
-        mean_nb_non_coding_rnas_ += exp_m_->prev_internal_organisms_[indiv_id]->nb_non_coding_RNAs;
+        mean_amount_of_dna_ += indiv.length();
 
-        mean_nb_functional_genes_ += exp_m_->prev_internal_organisms_[indiv_id]->nb_func_genes;
-        mean_nb_non_functional_genes_ += exp_m_->prev_internal_organisms_[indiv_id]->nb_non_func_genes;
+        mean_nb_coding_rnas_ += indiv.nb_coding_RNAs;
+        mean_nb_non_coding_rnas_ += indiv.nb_non_coding_RNAs;
 
-        mean_nb_mut_ += exp_m_->prev_internal_organisms_[indiv_id]->nb_mut_;
-        mean_nb_switch_ += exp_m_->prev_internal_organisms_[indiv_id]->nb_swi_;
+        mean_nb_functional_genes_ += indiv.nb_func_genes;
+        mean_nb_non_functional_genes_ += indiv.nb_non_func_genes;
+
+        mean_nb_mut_ += indiv.nb_mut_;
+        mean_nb_switch_ += indiv.nb_swi_;
     }
 
 
@@ -219,7 +221,7 @@ void Stats::compute_average() {
  */
 void Stats::write_best() {
     if (is_indiv_ && !is_computed_)
-        compute_best();
+        compute_best(*(exp_m_->best_indiv.get()));
 
     if (is_indiv_ && is_computed_) {
         // Write best stats

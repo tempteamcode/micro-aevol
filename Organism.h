@@ -82,7 +82,7 @@ Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
 {
 }
 
-    Organism(ExpManager *exp_m, const std::shared_ptr<Organism> &clone);
+    Organism(ExpManager *exp_m, const Organism& clone);
 
     Organism(ExpManager *exp_m, gzFile backup_file);
 

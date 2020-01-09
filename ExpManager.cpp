@@ -151,7 +151,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     // Create a population of clones based on the randomly generated organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(this, internal_organisms_[0]);
+                std::make_shared<Organism>(this, *(internal_organisms_[0].get()));
         internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
         internal_organisms_[indiv_id]->parent_id_ = 0;
         internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
@@ -351,7 +351,7 @@ void ExpManager::prepare_mutation(int indiv_id) {
 
     if (dna_mutator_array_[indiv_id]->hasMutate()) {
         internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(this, prev_internal_organisms_[next_generation_reproducer_[indiv_id]]);
+                std::make_shared<Organism>(this, *(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()));
 
         internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
         internal_organisms_[indiv_id]->indiv_id_ = indiv_id;

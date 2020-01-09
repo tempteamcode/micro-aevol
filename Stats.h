@@ -32,8 +32,8 @@
 #include <fstream>
 #include <limits>
 
-//#include "ExpManager.h"
 class ExpManager;
+class Organism;
 
 /**
  * Class to manage and generate the Stats (and the related file) of a simulation
@@ -52,7 +52,7 @@ public:
         }
     }
 
-    void compute_best();
+    void compute_best(const Organism& best_indiv);
     void compute_average();
 
     void write_best();

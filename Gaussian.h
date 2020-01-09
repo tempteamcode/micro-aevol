@@ -31,12 +31,12 @@
 #include <cmath>
 
 class Gaussian {
-public :
+public:
     Gaussian(double height, double mean, double width) : height_{height}, mean_{mean}, width_{width} {}
-    virtual ~Gaussian() {}
 
     double compute_y(double x) const { return height_ * std::exp(-(x- mean_)*(x- mean_) / (2* width_ * width_)); }
 
+private:
     double height_;
     double mean_;
     double width_; // In fact half-width to the inflexion points

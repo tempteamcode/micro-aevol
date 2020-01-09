@@ -51,28 +51,18 @@ void DnaMutator::generate_mutations() {
  * Generate the next mutation event for an organism.
  *
  * @param length : Update size of the DNA of the Organism
- * @return The generated mutation event (or nullptr if none was created)
  */
-MutationEvent* DnaMutator::generate_next_mutation(int length) {
-  int random_value;
-  MutationEvent* mevent = nullptr;
-
+void DnaMutator::generate_next_mutation(int length) {
   if (cpt_mut_>0) {
-    random_value = mut_prng_.random(cpt_mut_);
+    int random_value = mut_prng_.random(cpt_mut_);
     cpt_mut_--;
 
     if (random_value < nb_swi_) {
       nb_swi_--;
 
       int pos = mut_prng_.random(length);
-
-      mevent = new MutationEvent();
-      mevent->switch_pos(pos);
-      mutation_list_.push_back(mevent);
-
+      mutation_list_.emplace_back(pos);
     }
   }
-
-  return mevent;
 };
 

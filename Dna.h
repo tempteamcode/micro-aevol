@@ -40,12 +40,6 @@ public:
 
   inline void set(int pos, char c) { seq_[pos] = c; };
 
-  /// Remove the DNA inbetween pos_1 and pos_2
-  void remove(int pos_1, int pos_2);
-
-  /// Insert a sequence of a given length at a given position into the DNA of the Organism
-  void insert(int pos, const std::vector<char>& seq);
-
   void do_switch(int pos);
 
   int promoter_at(int pos);
