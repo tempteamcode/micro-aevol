@@ -1,6 +1,7 @@
+#include <cstdio>
+
 #include "bitset_safe.h"
 #include "bitset_fast.h"
-
 
 class own_dynamic_bitset
 {
@@ -117,10 +118,10 @@ private:
     std::string val_fast = bitset_fast.export_string();
     if (val_safe != val_fast)
     {
-      std::cout << "ASSERTION ERROR AFTER own_dynamic_bitset::" << context << std::endl;
-      std::cout << "bitset_safe : " << val_safe << "\n";
-      std::cout << "bitset_fast : " << val_fast << "\n";
-      std::cout << std::endl;
+      printf("ASSERTION ERROR AFTER own_dynamic_bitset::%s\n", context);
+      printf("bitset_safe : %s\n", val_safe.c_str());
+      printf("bitset_fast : %s\n", val_fast.c_str());
+      printf("\n");
       throw context;
     }
   }

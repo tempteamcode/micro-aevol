@@ -19,10 +19,10 @@ public:
       data = new item_t[allocated];
       
       if (std::is_trivially_copyable<item_t>::value) {
-        std::memcpy(data, other.data, used);
+        std::memcpy(data, other.data, used * sizeof(item_t));
       } else {
         item_t* dest = data;
-        item_t* src = other.data;
+        const item_t* src = other.data;
         size_t count = used;
         while (count --> 0) *dest++ = *src++;
       }
@@ -39,6 +39,7 @@ public:
     
     other.used = 0;
     other.allocated = 0;
+    //other.data = nullptr;
     
     return *this;
   }
@@ -49,10 +50,10 @@ public:
       data = new item_t[allocated];
       
       if (std::is_trivially_copyable<item_t>::value) {
-        std::memcpy(data, other.data, used);
+        std::memcpy(data, other.data, used * sizeof(item_t));
       } else {
         item_t* dest = data;
-        item_t* src = other.data;
+        const item_t* src = other.data;
         size_t count = used;
         while (count --> 0) *dest++ = *src++;
       }
@@ -63,6 +64,7 @@ public:
   {
     other.used = 0;
     other.allocated = 0;
+    //other.data = nullptr;
   }
   
   item_t& operator[](size_t pos) { return data[pos]; }
@@ -89,7 +91,7 @@ public:
       if (allocated > 0) {
         if (used > 0) {
           if (std::is_trivially_copyable<item_t>::value) {
-            std::memcpy(data, data_old, used);
+            std::memcpy(data, data_old, used * sizeof(item_t));
           } else {
             item_t* dest = data;
             item_t* src = data_old;
@@ -118,7 +120,7 @@ class own_dynamic_bitset_fast
 {
 public:
   typedef unsigned int int_t;
-  typedef std::vector<int_t> vec_t; //! uninitialized_vector<int_t>
+  typedef uninitialized_vector<int_t> vec_t;
   
   static constexpr size_t sizeof_int = sizeof(int_t) * 8;
   
@@ -141,7 +143,6 @@ public:
       set(pos, generator());
     }
   }
-  
   
   inline size_t size() const { return used; }
   
@@ -245,7 +246,7 @@ public:
   void import_string(const char* bits, size_t size)
   {
     used = size;
-    data.resize(size / sizeof_int + 1); //! redim_discard
+    data.redim_discard(size / sizeof_int + 1);
     
     //FIXME to improve
     for (size_t pos = 0; pos < size; pos++)
