@@ -12,9 +12,9 @@
 Dna::Dna(const Dna& clone) : seq_(clone.seq_) {
 }
 
-Dna::Dna(int length, Threefry::Gen& rng) : seq_(length) {
-  // Generate a random genome
-  seq_.generate(length, [&rng] () { return (rng.random(NB_BASE) != 0); });
+// Generate a random genome
+Dna::Dna(int length, Threefry::Gen& rng) : seq_(length, [&rng] () { return (rng.random(NB_BASE) != 0); })
+{
 }
 
 Dna::Dna(char* genome, int length) : seq_(length) {
