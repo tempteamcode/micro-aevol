@@ -1,5 +1,6 @@
 #include <vector>
 #include <utility>
+#include <cstring> // std::memcpy
 
 template <typename item_t>
 class uninitialized_vector
@@ -117,9 +118,9 @@ class own_dynamic_bitset_fast
 {
 public:
   typedef unsigned int int_t;
-  typedef uninitialized_vector<int_t> vec_t;
+  typedef std::vector<int_t> vec_t; //! uninitialized_vector<int_t>
   
-  static constexpr size_t sizeof_int = sizeof(int_t);
+  static constexpr size_t sizeof_int = sizeof(int_t) * 8;
   
   own_dynamic_bitset_fast() = default;
   ~own_dynamic_bitset_fast() = default;
@@ -139,10 +140,10 @@ public:
   void generate(size_t size, function_t generator)
   {
     used = size;
-    data.redim_discard(size / sizeof_int + 1);
+    data.resize(used / sizeof_int + 1); //! redim_discard
     
     // FIXME to improve
-    for (int pos = 0; pos < size; pos++) {
+    for (size_t pos = 0; pos < size; pos++) {
       set(pos, generator());
     }
   }
@@ -152,7 +153,7 @@ public:
     int_t val = 0;
     if (bit) val = ~val;
     
-    for (int pos = 0; pos < data.size(); pos++)
+    for (size_t pos = 0; pos < data.size(); pos++)
     {
       data[pos] = val;
     }
@@ -164,7 +165,7 @@ public:
     int subindex = pos % sizeof_int;
     int_t mask = 1 << subindex;
     
-    return (data[index] & mask != 0);
+    return ((data[index] & mask) != 0);
   }
   inline void set(size_t pos)
   {
@@ -179,7 +180,7 @@ public:
     size_t index = pos / sizeof_int;
     int subindex = pos % sizeof_int;
     int_t mask = 1 << subindex;
-    
+
     if (value) data[index] |= mask;
     else data[index] &= ~mask;
   }
@@ -247,7 +248,7 @@ public:
   void import_string(const char* bits, size_t size)
   {
     used = size;
-    data.redim_discard(size / sizeof_int + 1);
+    data.resize(size / sizeof_int + 1); //! redim_discard
     
     //FIXME to improve
     for (size_t pos = 0; pos < size; pos++)

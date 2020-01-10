@@ -12,7 +12,7 @@ public:
   : bitset_safe(size)
   , bitset_fast(size)
   {
-    check("own_dynamic_bitset(size_t)");
+    //check("own_dynamic_bitset(size_t)");
   }
 
   own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end)
@@ -34,7 +34,7 @@ public:
   {
     bitset_safe.generate(size, generator);
     
-    for (int pos = 0; pos < size; pos++)
+    for (size_t pos = 0; pos < size; pos++)
     {
       bitset_fast.set(pos, bitset_safe.test(pos));
     }
@@ -97,7 +97,7 @@ public:
     bitset_safe.import_string(bits, size);
     bitset_fast.import_string(bits, size);
     
-    check("import_string(char*,size_t)");
+    check("import_string(char*, size_t)");
   }
 
   std::string export_string() const
