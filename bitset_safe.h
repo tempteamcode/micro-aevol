@@ -1,15 +1,15 @@
 #include <vector>
 #include <utility>
 
-class own_dynamic_bitset
+class own_dynamic_bitset_safe
 {
 public:
-  own_dynamic_bitset() = default;
-  ~own_dynamic_bitset() = default;
+  own_dynamic_bitset_safe() = default;
+  ~own_dynamic_bitset_safe() = default;
 
-  inline own_dynamic_bitset(size_t size) : used(size), data(used+1,'0') { data[used] = '\0'; }
+  inline own_dynamic_bitset_safe(size_t size) : used(size), data(used+1,'0') { data[used] = '\0'; }
 
-  own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end) : used(end - begin), data(other.data + begin, other.data + end + 1)
+  own_dynamic_bitset_safe(const own_dynamic_bitset_safe& other, size_t begin, size_t end) : used(end - begin), data(other.data.begin() + begin, other.data.begin() + end + 1)
   {
     data[used] = '\0';
   }

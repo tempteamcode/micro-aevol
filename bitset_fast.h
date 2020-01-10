@@ -113,7 +113,7 @@ private:
   item_t* data;
 };
 
-class own_dynamic_bitset
+class own_dynamic_bitset_fast
 {
 public:
   typedef unsigned int int_t;
@@ -121,12 +121,12 @@ public:
   
   static constexpr size_t sizeof_int = sizeof(int_t);
   
-  own_dynamic_bitset() = default;
-  ~own_dynamic_bitset() = default;
+  own_dynamic_bitset_fast() = default;
+  ~own_dynamic_bitset_fast() = default;
   
-  inline own_dynamic_bitset(size_t size) : used(size), data(used / sizeof_int + 1) { }
+  inline own_dynamic_bitset_fast(size_t size) : used(size), data(used / sizeof_int + 1) { }
   
-  own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end) : used(end - begin), data(used / sizeof_int + 1)
+  own_dynamic_bitset_fast(const own_dynamic_bitset_fast& other, size_t begin, size_t end) : used(end - begin), data(used / sizeof_int + 1)
   {
     for (int pos = 0; pos < used; pos++) {
       set(pos, other.test(pos + begin));
@@ -210,7 +210,7 @@ public:
   {
     //FIXME to improve
     
-    own_dynamic_bitset result(used - (end - begin));
+    own_dynamic_bitset_fast result(used - (end - begin));
     
     int pos_dest = 0;
     for (int pos = 0; pos < used; pos++)
@@ -222,11 +222,11 @@ public:
     std::swap(*this, result);
   }
   
-  void range_insert(size_t pos_insert, const own_dynamic_bitset& other)
+  void range_insert(size_t pos_insert, const own_dynamic_bitset_fast& other)
   {
     //FIXME to improve
     
-    own_dynamic_bitset result(used + other.used);
+    own_dynamic_bitset_fast result(used + other.used);
     
     int pos_dest = 0;
     for (int pos = 0; ; pos++)
