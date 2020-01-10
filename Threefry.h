@@ -89,11 +89,11 @@ private:
 			int32_t binomial_random(int32_t nb, double prob); // Binomial drawing of parameters (nb, prob)
 	};
 
-	Gen&& gen(unsigned int x, unsigned int y, Phase phase) {
-		return std::move(Gen(this, x, y, phase));
+	Gen gen(unsigned int x, unsigned int y, Phase phase) {
+		return Gen(this, x, y, phase);
 	}
-	Gen&& gen(size_t idx, Phase phase) {
-		return std::move(Gen(this, idx, phase));
+	Gen gen(size_t idx, Phase phase) {
+		return Gen(this, idx, phase);
 	}
 
 	void save(gzFile backup_file) const;

@@ -459,21 +459,21 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
  * @param indiv_id : Unique identification number of the organism
  */
 void ExpManager::start_stop_RNA(int indiv_id) {
-    for (int dna_pos = 0; dna_pos < internal_organisms_[indiv_id]->length(); dna_pos++) {
-        if (internal_organisms_[indiv_id]->length() >= PROM_SIZE) {
-            int dist_lead = internal_organisms_[indiv_id]->dna_.promoter_at(dna_pos);
+    Organism& indiv = *(internal_organisms_[indiv_id].get());
+    if (indiv.length() >= PROM_SIZE) {
+	    for (int dna_pos = 0; dna_pos < indiv.length(); dna_pos++) {
+            int dist_lead = indiv.dna_.promoter_at(dna_pos);
 
             if (dist_lead <= 4) {
-                internal_organisms_[indiv_id]->add_new_promoter(dna_pos, dist_lead);
+                indiv.add_new_promoter(dna_pos, dist_lead);
             }
 
             // Computing if a terminator exists at that position
-            int dist_term_lead = internal_organisms_[indiv_id]->dna_.terminator_at(dna_pos);
+            int dist_term_lead = indiv.dna_.terminator_at(dna_pos);
 
             if (dist_term_lead == 4) {
-                internal_organisms_[indiv_id]->terminators.insert(
-                        dna_pos);
-            }
+                indiv.terminators.insert(dna_pos);
+	        }
         }
     }
 }
