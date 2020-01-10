@@ -205,7 +205,7 @@ public:
     return test(pos);
   }
   
-  
+  /*
   void range_erase(size_t begin, size_t end)
   {
     //FIXME to improve
@@ -242,7 +242,7 @@ public:
     
     std::swap(*this, result);
   }
-  
+  */
   
   void import_string(const char* bits, size_t size)
   {

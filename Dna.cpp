@@ -52,10 +52,12 @@ void Dna::load(gzFile backup_file) {
  * @param pos_1
  * @param pos_2
  */
+/*
 void Dna::remove(int pos_1, int pos_2) {
   assert(pos_1 >= 0 && pos_2 >= pos_1 && pos_2 <= seq_.size());
   seq_.range_erase(pos_1, pos_2);
 }
+*/
 
 /**
  * Insert a sequence of a given length at a given position into the DNA of the Organism
@@ -64,12 +66,14 @@ void Dna::remove(int pos_1, int pos_2) {
  * @param seq : the sequence itself
  * @param seq_length : the size of the sequence
  */
+/*
 void Dna::insert(int pos, const own_dynamic_bitset& seq) {
 // Insert sequence 'seq' at position 'pos'
   assert(pos >= 0 && pos < seq_.size());
 
   seq_.range_insert(pos, seq);
 }
+*/
 
 /**
  * Insert a sequence of a given length at a given position into the DNA of the Organism
@@ -78,14 +82,17 @@ void Dna::insert(int pos, const own_dynamic_bitset& seq) {
  * @param seq : the sequence itself
  * @param seq_length : the size of the sequence
  */
+/*
 void Dna::insert(int pos, Dna* seq) {
   insert(pos, seq->seq_);
 }
+*/
 
 void Dna::do_switch(int pos) {
   seq_.flip(pos);
 }
 
+/*
 void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
   // Duplicate segment [pos_1; pos_2[ and insert the duplicate before pos_3
   char* duplicate_segment = NULL;
@@ -125,6 +132,7 @@ void Dna::do_duplication(int pos_1, int pos_2, int pos_3) {
     insert(pos_3, seq_dupl_p1);
   }
 }
+*/
 
 int Dna::promoter_at(int pos) {
   int prom_dist[22];
