@@ -1,21 +1,19 @@
 #include <vector>
 #include <utility>
 
-class own_dynamic_bitset
+class own_dynamic_bitset_safe
 {
 public:
-  own_dynamic_bitset() = default;
-  ~own_dynamic_bitset() = default;
-  
-  inline own_dynamic_bitset(size_t size) : used(size), data(used+1,'0') { data[used] = '\0'; }
-  
-  own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end) : used(end - begin), data(used+1,'0')
+  own_dynamic_bitset_safe() = default;
+  ~own_dynamic_bitset_safe() = default;
+
+  inline own_dynamic_bitset_safe(size_t size) : used(size), data(used+1,'0') { data[used] = '\0'; }
+
+  own_dynamic_bitset_safe(const own_dynamic_bitset_safe& other, size_t begin, size_t end) : used(end - begin), data(other.data.begin() + begin, other.data.begin() + end + 1)
   {
-    for (int pos = 0; pos < used; pos++) {
-      set(pos, other.test(begin + pos));
-    }
+    data[used] = '\0';
   }
-  
+
   inline size_t size() const { return used; }
 
   template<typename function_t>
@@ -50,7 +48,7 @@ public:
   }
   inline void set(size_t pos, bool value)
   {
-    data[pos] = value ? '1' : '0';
+    data[pos] = (value ? '1' : '0');
   }
   inline void reset(size_t pos)
   {
@@ -60,25 +58,23 @@ public:
   {
     data[pos] = (data[pos] == '0' ? '1' : '0');
   }
-  
+
   inline bool operator[](size_t pos) const
   {
     return test(pos);
   }
-  
-  
-  
+
   void import_string(const char* bits, size_t size)
   {
     used = size;
     data = std::vector<char>(bits, bits+size);
   }
-  
+
   std::string export_string() const
   {
-    return std::string(data.begin(), data.end());
+    return std::string(data.begin(), data.end()-1);
   }
-  
+
 private:
   size_t used;
   std::vector<char> data;
