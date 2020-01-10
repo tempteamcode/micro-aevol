@@ -131,6 +131,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         internal_organisms_[0] = random_organism;
 
         start_stop_RNA(0);
+
         compute_RNA(0);
 
         start_protein(0);
