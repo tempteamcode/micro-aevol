@@ -105,6 +105,9 @@ public:
     used = size;
   }
   
+  inline size_t size() const { return used; }
+  
+private:
   size_t used;
   size_t allocated;
   item_t* data;
@@ -145,11 +148,22 @@ public:
   }
   
   
+  inline void set_all(bool bit)
+  {
+    int_t val = 0;
+    if (bit) val = ~val;
+    
+    for (int pos = 0; pos < data.size(); pos++)
+    {
+      data[pos] = val;
+    }
+  }
+  
   inline bool test(size_t pos) const
   {
     size_t index = pos / sizeof_int;
     int subindex = pos % sizeof_int;
-    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    int_t mask = 1 << subindex;
     
     return (data[index] & mask != 0);
   }
@@ -157,7 +171,7 @@ public:
   {
     size_t index = pos / sizeof_int;
     int subindex = pos % sizeof_int;
-    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    int_t mask = 1 << subindex;
     
     data[index] |= mask;
   }
@@ -165,7 +179,7 @@ public:
   {
     size_t index = pos / sizeof_int;
     int subindex = pos % sizeof_int;
-    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    int_t mask = 1 << subindex;
     
     if (value) data[index] |= mask;
     else data[index] &= ~mask;
@@ -174,7 +188,7 @@ public:
   {
     size_t index = pos / sizeof_int;
     int subindex = pos % sizeof_int;
-    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    int_t mask = 1 << subindex;
     
     data[index] &= ~mask;
   }
@@ -182,7 +196,7 @@ public:
   {
     size_t index = pos / sizeof_int;
     int subindex = pos % sizeof_int;
-    int_t mask = (1 << (sizeof_int - 1)) >> subindex; //FIXME to improve
+    int_t mask = 1 << subindex;
     
     data[index] ^= mask;
   }

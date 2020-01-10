@@ -18,6 +18,7 @@ Dna::Dna(char* genome, int length) : seq_(length) {
 }
 
 Dna::Dna(int length) : seq_(length) {
+  seq_.set_all(false);
 }
 
 int Dna::length() const {
