@@ -5,9 +5,9 @@
 #include "Dna.h"
 #include "ExpManager.h"
 
-#define PROM_SEQ_BIT(n) ((PROM_SEQ>>(PROM_SEQ_LEN - n)) & 0b1)
-#define SHINE_DAL_SEQ_BIT(n) ((SHINE_DAL_SEQ>>(SHINE_DAL_SEQ_LEN - n)) & 0b1)
-#define PROTEIN_END_BIT(n) ((PROTEIN_END>>(PROTEIN_END_LEN - n)) & 0b1)
+#define PROM_SEQ_BIT(n) ((PROM_SEQ>>(PROM_SEQ_LEN-n-1)) & 0b1)
+#define SHINE_DAL_SEQ_BIT(n) ((SHINE_DAL_SEQ>>(SHINE_DAL_SEQ_LEN-n-1)) & 0b1)
+#define PROTEIN_END_BIT(n) ((PROTEIN_END>>(PROTEIN_END_LEN-n-1)) & 0b1)
 
 Dna::Dna(const Dna& clone) : seq_(clone.seq_) {
 }
