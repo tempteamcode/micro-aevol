@@ -139,9 +139,25 @@ public:
   template<typename function_t>
   inline own_dynamic_bitset(size_t size, function_t generator) : used(size), data(used / sizeof_int + 1)
   {
+    /*
     for (size_t pos = 0; pos < size; pos++) {
       set(pos, generator());
     }
+    */
+    
+    size_t count = used;
+    size_t index = 0;
+    int_t val = 0;
+    int_t mask = 1;
+    while (count --> 0) {
+      if (generator()) val |= mask;
+      if ((mask <<= 1) == 0) {
+        data[index++] = val;
+        val = 0;
+        mask = 1;
+      }
+    }
+    if (mask != 1) data[index++] = val;
   }
   
   inline size_t size() const { return used; }
