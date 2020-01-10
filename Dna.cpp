@@ -261,7 +261,7 @@ int Dna::codon_at(int pos) {
                                  seq_.size()
                                : pos + i;
     if (seq_[t_pos] ==
-        '1')
+            true)
       value += 1 << (CODON_SIZE - i - 1);
   }
 
