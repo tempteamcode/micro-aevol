@@ -264,7 +264,7 @@ public:
     //FIXME to improve
     for (size_t pos = 0; pos < used; pos++)
     {
-      buffer[pos] = test(pos) ? '1' : '0';
+      buffer[pos] = (test(pos) ? '1' : '0');
     }
     
     buffer[used] = '\0';
