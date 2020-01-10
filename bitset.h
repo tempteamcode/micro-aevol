@@ -1,128 +1,281 @@
-#include "bitset_safe.h"
-#include "bitset_fast.h"
+#include <vector>
+#include <utility>
+#include <cstring> // std::memcpy
 
+template <typename item_t>
+class uninitialized_vector
+{
+public:
+  uninitialized_vector(size_t size = 0) : used(size), allocated(size) { if (allocated > 0) data = new item_t[allocated]; }
+  ~uninitialized_vector() { if (allocated > 0) delete[] data; }
+  
+  uninitialized_vector& operator=(const uninitialized_vector& other)
+  {
+    if (&other == this) return *this;
+    used = other.used;
+    allocated = other.used;
+    
+    if (allocated > 0) {
+      data = new item_t[allocated];
+      
+      if (std::is_trivially_copyable<item_t>::value) {
+        std::memcpy(data, other.data, used);
+      } else {
+        item_t* dest = data;
+        item_t* src = other.data;
+        size_t count = used;
+        while (count --> 0) *dest++ = *src++;
+      }
+    }
+    
+    return *this;
+  }
+  
+  uninitialized_vector& operator=(uninitialized_vector&& other)
+  {
+    used = other.used;
+    allocated = other.allocated;
+    data = other.data;
+    
+    other.used = 0;
+    other.allocated = 0;
+    
+    return *this;
+  }
+  
+  uninitialized_vector (const uninitialized_vector& other) : used(other.used), allocated(other.used)
+  {
+    if (allocated > 0) {
+      data = new item_t[allocated];
+      
+      if (std::is_trivially_copyable<item_t>::value) {
+        std::memcpy(data, other.data, used);
+      } else {
+        item_t* dest = data;
+        item_t* src = other.data;
+        size_t count = used;
+        while (count --> 0) *dest++ = *src++;
+      }
+    }
+  }
+  
+  uninitialized_vector (uninitialized_vector&& other) : used(other.used), allocated(other.allocated), data(other.data)
+  {
+    other.used = 0;
+    other.allocated = 0;
+  }
+  
+  item_t& operator[](size_t pos) { return data[pos]; }
+  const item_t& operator[](size_t pos) const { return data[pos]; }
+  
+  void redim_discard(size_t size)
+  {
+    if (size > allocated)
+    {
+      if (allocated > 0) delete[] data;
+      allocated = size;
+      data = new item_t[size];
+    }
+    used = size;
+  }
+  
+  void redim_preserve(size_t size)
+  {
+    if (size > allocated)
+    {
+      item_t* data_old = data;
+      data = new item_t[size];
+      
+      if (allocated > 0) {
+        if (used > 0) {
+          if (std::is_trivially_copyable<item_t>::value) {
+            std::memcpy(data, data_old, used);
+          } else {
+            item_t* dest = data;
+            item_t* src = data_old;
+            size_t count = used;
+            while (count --> 0) *dest++ = *src++;
+          }
+        }
+        
+        delete[] data_old;
+      }
+      
+      allocated = size;
+    }
+    used = size;
+  }
+  
+  inline size_t size() const { return used; }
+  
+private:
+  size_t used;
+  size_t allocated;
+  item_t* data;
+};
 
 class own_dynamic_bitset
 {
 public:
+  typedef unsigned int int_t;
+  typedef std::vector<int_t> vec_t; //! uninitialized_vector<int_t>
+  
+  static constexpr size_t sizeof_int = sizeof(int_t) * 8;
+  
   own_dynamic_bitset() = default;
   ~own_dynamic_bitset() = default;
-
-  inline own_dynamic_bitset(size_t size)
-  : bitset_safe(size)
-  , bitset_fast(size)
+  
+  inline own_dynamic_bitset(size_t size) : used(size), data(used / sizeof_int + 1) { }
+  
+  own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end) : used(end - begin), data(used / sizeof_int + 1)
   {
-    //check("own_dynamic_bitset(size_t)");
+    for (int pos = 0; pos < used; pos++) {
+      set(pos, other.test(pos + begin));
+    }
   }
-
-  own_dynamic_bitset(const own_dynamic_bitset& other, size_t begin, size_t end)
-  : bitset_safe(other.bitset_safe, begin, end)
-  , bitset_fast(other.bitset_fast, begin, end)
-  {
-    check("own_dynamic_bitset(own_dynamic_bitset&, begin, end)");
-  }
-
-  inline size_t size() const
-  {
-    size_t res = bitset_safe.size();
-    if (res != bitset_fast.size()) throw "size()";
-    return res;
-  }
-
+  
+  inline size_t size() const { return used; }
+  
   template<typename function_t>
   void generate(size_t size, function_t generator)
   {
-    bitset_safe.generate(size, generator);
+    used = size;
+    data.resize(used / sizeof_int + 1); //! redim_discard
     
-    for (size_t pos = 0; pos < size; pos++)
-    {
-      bitset_fast.set(pos, bitset_safe.test(pos));
+    // FIXME to improve
+    for (size_t pos = 0; pos < size; pos++) {
+      set(pos, generator());
     }
-    
-    check("generate(size_t, function_t)");
   }
-
+  
   inline void set_all(bool bit)
   {
-    bitset_safe.set_all(bit);
-    bitset_fast.set_all(bit);
+    int_t val = 0;
+    if (bit) val = ~val;
     
-    check("set_all(bool)");
+    for (size_t pos = 0; pos < data.size(); pos++)
+    {
+      data[pos] = val;
+    }
   }
-
+  
   inline bool test(size_t pos) const
   {
-    bool res = bitset_safe.test(pos);
-    if (res != bitset_fast.test(pos)) throw "test(size_t)";
-    return res;
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = 1 << subindex;
+    
+    return ((data[index] & mask) != 0);
   }
   inline void set(size_t pos)
   {
-    bitset_safe.set(pos);
-    bitset_fast.set(pos);
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = 1 << subindex;
     
-    check("set(size_t)");
+    data[index] |= mask;
   }
   inline void set(size_t pos, bool value)
   {
-    bitset_safe.set(pos, value);
-    bitset_fast.set(pos, value);
-    
-    check("set(size_t, bool)");
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = 1 << subindex;
+
+    if (value) data[index] |= mask;
+    else data[index] &= ~mask;
   }
   inline void reset(size_t pos)
   {
-    bitset_safe.reset(pos);
-    bitset_fast.reset(pos);
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = 1 << subindex;
     
-    check("reset(size_t)");
+    data[index] &= ~mask;
   }
   inline void flip(size_t pos)
   {
-    bitset_safe.flip(pos);
-    bitset_fast.flip(pos);
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
+    int_t mask = 1 << subindex;
     
-    check("flip(size_t)");
+    data[index] ^= mask;
   }
-
+  
   inline bool operator[](size_t pos) const
   {
-    bool res = bitset_safe[pos];
-    if (res != bitset_fast[pos]) throw "operator[](size_t)";
-    return res;
+    return test(pos);
   }
-
+  
+  /*
+  void range_erase(size_t begin, size_t end)
+  {
+    //FIXME to improve
+    
+    own_dynamic_bitset result(used - (end - begin));
+    
+    int pos_dest = 0;
+    for (int pos = 0; pos < used; pos++)
+    {
+      if (pos == begin) { pos = end - 1; continue; }
+      result.set(pos_dest++, test(pos));
+    }
+    
+    std::swap(*this, result);
+  }
+  
+  void range_insert(size_t pos_insert, const own_dynamic_bitset& other)
+  {
+    //FIXME to improve
+    
+    own_dynamic_bitset result(used + other.used);
+    
+    int pos_dest = 0;
+    for (int pos = 0; ; pos++)
+    {
+      if (pos == pos_insert) {
+        for (int pos_other = 0; pos_other < other.used; pos_other++) {
+          result.set(pos_dest++, other.test(pos_other));
+        }
+      }
+      if (pos == other.used) break;
+      result.set(pos_dest++, test(pos));
+    }
+    
+    std::swap(*this, result);
+  }
+  */
+  
   void import_string(const char* bits, size_t size)
   {
-    bitset_safe.import_string(bits, size);
-    bitset_fast.import_string(bits, size);
+    used = size;
+    data.resize(size / sizeof_int + 1); //! redim_discard
     
-    check("import_string(char*, size_t)");
+    //FIXME to improve
+    for (size_t pos = 0; pos < size; pos++)
+    {
+      set(pos, (*bits++ != '0'));
+    } 
   }
-
+  
   std::string export_string() const
   {
-    std::string res = bitset_safe.export_string();
-    if (res != bitset_fast.export_string()) throw "export_string()";
-    return res;
-  }
-
-private:
-  own_dynamic_bitset_safe bitset_safe;
-  own_dynamic_bitset_fast bitset_fast;
-
-  void check(const char* context) const
-  {
-    std::string val_safe = bitset_safe.export_string();
-    std::string val_fast = bitset_fast.export_string();
-    if (val_safe != val_fast)
+    std::string result;
+    char* buffer = new char[used + 1];
+    
+    //FIXME to improve
+    for (size_t pos = 0; pos < used; pos++)
     {
-      std::cout << "ASSERTION ERROR AFTER own_dynamic_bitset::" << context << std::endl;
-      std::cout << "bitset_safe : " << val_safe << "\n";
-      std::cout << "bitset_fast : " << val_fast << "\n";
-      std::cout << std::endl;
-      throw context;
+      buffer[pos] = (test(pos) ? '1' : '0');
     }
+    
+    buffer[used] = '\0';
+    result = buffer;
+    delete[] buffer;
+    return result;
   }
+  
+private:
+  size_t used;
+  vec_t data;
 };
 
