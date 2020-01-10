@@ -16,9 +16,12 @@
 
 constexpr int8_t CODON_SIZE = 3;
 
-constexpr const char* PROM_SEQ = "0101011001110010010110";
-constexpr const char* SHINE_DAL_SEQ = "011011000";
-constexpr const char* PROTEIN_END = "001"; // CODON_STOP
+constexpr const int PROM_SEQ = 0b0101011001110010010110;
+constexpr const int PROM_SEQ_LEN = 22; 
+constexpr const int SHINE_DAL_SEQ = 0b011011000;
+constexpr const int SHINE_DAL_SEQ_LEN = 9;
+constexpr const int PROTEIN_END = 0b001; // CODON_STOP
+constexpr const int PROTEIN_END_LEN = 3;
 
 class ExpManager;
 
@@ -41,12 +44,6 @@ class Dna {
 
   void save(gzFile backup_file);
   void load(gzFile backup_file);
-
-/*
-  inline void set(size_t pos, bool bit) {
-    seq_.set(pos, bit);
-  }
-*/
 
   /// Remove the DNA inbetween pos_1 and pos_2
   void remove(int pos_1, int pos_2);

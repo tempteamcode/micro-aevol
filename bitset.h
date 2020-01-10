@@ -147,7 +147,6 @@ public:
     }
   }
   
-  
   inline void set_all(bool bit)
   {
     int_t val = 0;

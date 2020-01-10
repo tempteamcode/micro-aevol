@@ -5,6 +5,10 @@
 #include "Dna.h"
 #include "ExpManager.h"
 
+#define PROM_SEQ_BIT(n) ((PROM_SEQ>>(PROM_SEQ_LEN - n)) & 0b1)
+#define SHINE_DAL_SEQ_BIT(n) ((SHINE_DAL_SEQ>>(SHINE_DAL_SEQ_LEN - n)) & 0b1)
+#define PROTEIN_END_BIT(n) ((PROTEIN_END>>(PROTEIN_END_LEN - n)) & 0b1)
+
 Dna::Dna(const Dna& clone) : seq_(clone.seq_) {
 }
 
@@ -128,7 +132,7 @@ int Dna::promoter_at(int pos) {
   for (int motif_id = 0; motif_id < 22; motif_id++) {
     // Searching for the promoter
     prom_dist[motif_id] =
-        PROM_SEQ[motif_id] ==
+        PROM_SEQ_BIT(motif_id) ==
         seq_[
             pos + motif_id >= seq_.size() ? pos +
                                             motif_id -
@@ -206,7 +210,7 @@ bool Dna::shine_dal_start(int pos) {
                                      : pos + k_t;
 
     if (seq_[t_pos] ==
-        SHINE_DAL_SEQ[k]) {
+        SHINE_DAL_SEQ_BIT(k)) {
       start = true;
     } else {
       start = false;
@@ -227,7 +231,7 @@ bool Dna::protein_stop(int pos) {
           pos + k;
 
     if (seq_[t_k] ==
-        PROTEIN_END[k]) {
+        PROTEIN_END_BIT(k)) {
       is_protein = true;
     } else {
       is_protein = false;
