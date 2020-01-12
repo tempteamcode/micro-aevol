@@ -45,21 +45,8 @@ class Dna {
   void save(gzFile backup_file);
   void load(gzFile backup_file);
 
-/*
-  /// Remove the DNA inbetween pos_1 and pos_2
-  void remove(int pos_1, int pos_2);
-
-  /// Insert a sequence of a given length at a given position into the DNA of the Organism
-  void insert(int pos, const own_dynamic_bitset& seq);
-
-  /// Insert a sequence of a given length at a given position into the DNA of the Organism
-  void insert(int pos, Dna* seq);
-*/
-
   void do_switch(int pos);
-/*
-  void do_duplication(int pos_1, int pos_2, int pos_3);
-*/
+
   int promoter_at(int pos);
 
   int terminator_at(int pos);
