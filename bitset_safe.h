@@ -17,15 +17,13 @@ public:
   inline size_t size() const { return used; }
 
   template<typename function_t>
-  void generate(size_t size, function_t generator)
+  inline own_dynamic_bitset_safe(size_t size, function_t generator) : used(size), data(used+1,'0')
   {
-    used = size;
-    data.resize(used + 1);
-    data[used] = '\0';
-    
     for (int pos = 0; pos < size; pos++) {
       set(pos, generator());
     }
+    
+    data[used] = '\0';
   }
 
   inline void set_all(bool bit)
