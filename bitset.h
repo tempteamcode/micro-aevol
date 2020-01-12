@@ -272,8 +272,7 @@ public:
                                          >> (sizeof_int-len);
 
       if(subindex + len <= sizeof_int && pos+len <= used){
-          unsigned int mask = 0b1;
-          for(int i=0;i<len-1;i++) mask = (mask << 1)|0b1;
+          unsigned int mask = MASKS[len-1];
 
           mask = mask << subindex;
 
@@ -284,20 +283,17 @@ public:
           int len2 = used - (index+1)*sizeof_int;
           int len3 = len - len1 - len2;
 
-          unsigned int mask1 = 0b1;
-          for(int i=0;i<len1-1;i++) mask1 = (mask1<<1)|0b1;
+          unsigned int mask1 = MASKS[len1-1];
 
           mask1 = mask1 << subindex;
 
           unsigned int res = (mask1&data[index])>>(subindex);
 
-          unsigned int mask2 = 0b1;
-          for(int i=0;i<len2-1;i++) mask2 = (mask2<<1)|0b1;
+          unsigned int mask2 = MASKS[len2-1];
 
           res |= (mask2&data[index+1])<<len1;
 
-          unsigned int mask3 = 0b1;
-          for(int i=0;i<len3-1;i++) mask3 = (mask3<<1)|0b1;
+          unsigned int mask3 = MASKS[len3-1];
 
           res |= (mask3&data[0])<<(len1+len2);
 
@@ -313,15 +309,13 @@ public:
           int len1 = size_left;
           int len2 = len - len1;
 
-          unsigned int mask1 = 0b1;
-          for(int i=0;i<len1-1;i++) mask1 = (mask1<<1)|0b1;
+          unsigned int mask1 = MASKS[len1-1];
 
           mask1 = mask1 << subindex;
 
           unsigned int res = (mask1&data[index])>>(subindex);
 
-          unsigned int mask2 = 0b1;
-          for(int i=0;i<len2-1;i++) mask2 = (mask2<<1)|0b1;
+          unsigned int mask2 = MASKS[len2-1];
 
           int newIndex = index+1;
           if(pos+len > used)
@@ -343,8 +337,7 @@ public:
       unsigned int res;
 
       if(subindex + len <= sizeof_int && (pos%used)+len <= used){
-          unsigned int mask = 0b1;
-          for(int i=0;i<len-1;i++) mask = (mask << 1)|0b1;
+          unsigned int mask = MASKS[len-1];
 
           mask = mask << subindex;
 
@@ -355,20 +348,17 @@ public:
           int len2 = used - (index + 1) * sizeof_int;
           int len3 = len - len1 - len2;
 
-          unsigned int mask1 = 0b1;
-          for (int i = 0; i < len1 - 1; i++) mask1 = (mask1 << 1) | 0b1;
+          unsigned int mask1 = MASKS[len1-1];
 
           mask1 = mask1 << subindex;
 
           res = (mask1 & data[index]) >> (subindex);
 
-          unsigned int mask2 = 0b1;
-          for (int i = 0; i < len2 - 1; i++) mask2 = (mask2 << 1) | 0b1;
+          unsigned int mask2 = MASKS[len2-1];
 
           res |= (mask2 & data[index + 1]) << len1;
 
-          unsigned int mask3 = 0b1;
-          for (int i = 0; i < len3 - 1; i++) mask3 = (mask3 << 1) | 0b1;
+          unsigned int mask3 = MASKS[len3-1];
 
           res |= (mask3 & data[0]) << (len1 + len2);
       }else{
@@ -382,15 +372,13 @@ public:
           int len1 = size_left;
           int len2 = len - len1;
 
-          unsigned int mask1 = 0b1;
-          for(int i=0;i<len1-1;i++) mask1 = (mask1<<1)|0b1;
+          unsigned int mask1 = MASKS[len1-1];
 
           mask1 = mask1 << subindex;
 
           res = (mask1&data[index])>>(subindex);
 
-          unsigned int mask2 = 0b1;
-          for(int i=0;i<len2-1;i++) mask2 = (mask2<<1)|0b1;
+          unsigned int mask2 = MASKS[len2-1];
 
           int newIndex = index+1;
           if(pos+len > used)
@@ -420,8 +408,7 @@ public:
               >> (sizeof_int-len);
 
       if(subindex + len <= sizeof_int && pos+len <= used){
-          unsigned int mask = 0b1;
-          for(int i=0;i<len-1;i++) mask = (mask << 1)|0b1;
+          unsigned int mask = MASKS[len-1];
 
           mask = mask << subindex;
 
@@ -432,20 +419,17 @@ public:
           int len2 = used - (index+1)*sizeof_int;
           int len3 = len - len1 - len2;
 
-          unsigned int mask1 = 0b1;
-          for(int i=0;i<len1-1;i++) mask1 = (mask1<<1)|0b1;
+          unsigned int mask1 = MASKS[len1-1];
 
           mask1 = mask1 << subindex;
 
           unsigned int res = (mask1&data[index])>>(subindex);
 
-          unsigned int mask2 = 0b1;
-          for(int i=0;i<len2-1;i++) mask2 = (mask2<<1)|0b1;
+          unsigned int mask2 = MASKS[len2-1];
 
           res |= (mask2&data[index+1])<<len1;
 
-          unsigned int mask3 = 0b1;
-          for(int i=0;i<len3-1;i++) mask3 = (mask3<<1)|0b1;
+          unsigned int mask3 = MASKS[len3-1];
 
           res |= (mask3&data[0])<<(len1+len2);
 
@@ -461,15 +445,13 @@ public:
           int len1 = size_left;
           int len2 = len - len1;
 
-          unsigned int mask1 = 0b1;
-          for(int i=0;i<len1-1;i++) mask1 = (mask1<<1)|0b1;
+          unsigned int mask1 = MASKS[len1-1];
 
           mask1 = mask1 << subindex;
 
           unsigned int res = (mask1&data[index])>>(subindex);
 
-          unsigned int mask2 = 0b1;
-          for(int i=0;i<len2-1;i++) mask2 = (mask2<<1)|0b1;
+          unsigned int mask2 = MASKS[len2-1];
 
           int newIndex = index+1;
           if(pos+len > used)
