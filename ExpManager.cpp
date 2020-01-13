@@ -126,8 +126,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
 
     // Generate a random organism that is better than nothing
     for (;;) {
-        Organism* random_organism = new Organism(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna, 0);
-		Organism& indiv = *random_organism;
+        Organism indiv(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna, 0);
 
         indiv.start_stop_RNA();
         indiv.compute_RNA();
@@ -144,7 +143,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         double r_compare = round((indiv.metaerror - geometric_area_) * 1E10) / 1E10;
         if (!(r_compare >= 0))
         {
-            internal_organisms_[0] = std::shared_ptr<Organism>(random_organism);
+            internal_organisms_[0] = std::make_shared<Organism>(std::move(indiv));
             break;
         }
     }

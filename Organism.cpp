@@ -266,9 +266,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     // Hamming distance of the sequence from the promoter consensus
 
     for (int32_t i = 0; i < pos; i++) {
-
         int dist = dna_.promoter_at(i);
-
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);
         }
@@ -280,7 +278,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
  * Search for Promoters and Terminators (i.e. beginning and ending of a RNA) within the whole DNA of an Organism
  */
 void Organism::start_stop_RNA() {
-    if (length() < PROM_SIZE) return;
+    if (dna_.length() < PROM_SIZE) return;
 
     for (int dna_pos = 0; dna_pos < dna_.length(); dna_pos++) {
         int dist_lead = dna_.promoter_at(dna_pos);
@@ -300,20 +298,18 @@ void Organism::start_stop_RNA() {
  * Create the list of RNAs based on the found promoters and terminators on the DNA of an Organism
  */
 void Organism::compute_RNA() {
-    if (terminators.empty()) return;
-
-    rnas.resize(promoters_.size());
+    rnas.clear();
+    rnas.reserve(promoters_.size());
 
     for (const auto &prom_pair: promoters_) {
         int prom_pos = prom_pair.first;
-        int k = prom_pos + 22;
 
+        int k = prom_pos + 22;
         k = k >= dna_.length()
             ? k - dna_.length()
             : k;
 
         auto it_rna_end = terminators.lower_bound(k);
-
         if (it_rna_end == terminators.end()) {
             it_rna_end = terminators.begin();
         }
@@ -322,24 +318,20 @@ void Organism::compute_RNA() {
                       ? *it_rna_end + 10 - dna_.length()
                       : *it_rna_end + 10;
 
-        int rna_length = 0;
-
+        int rna_length;
         if (prom_pos > rna_end)
             rna_length = dna_.length() - prom_pos + rna_end;
         else
             rna_length = rna_end - prom_pos;
-
         rna_length -= 21;
 
         if (rna_length >= 0) {
-            int glob_rna_idx = rna_count_;
+            rnas.emplace_back(
+                prom_pos,
+                rna_end,
+                1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                rna_length);
             rna_count_++;
-
-            rnas[glob_rna_idx] =
-                    RNA(prom_pos,
-                            rna_end,
-                            1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
-                            rna_length);
         }
     }
 }
@@ -398,15 +390,12 @@ void Organism::opt_prom_compute_RNA() {
             rna_length -= 21;
 
             if (rna_length > 0) {
-                int glob_rna_idx = rna_count_;
-                rna_count_++;
-
                 rnas.emplace_back(
-                        prom_pos,
-                        rna_end,
-                        1.0 - std::fabs(
-                                ((float) prom_pair.second.error)) / 5.0,
-                        rna_length);
+                    prom_pos,
+                    rna_end,
+                    1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                    rna_length);
+                rna_count_++;
             }
         }
     }
@@ -416,59 +405,49 @@ void Organism::opt_prom_compute_RNA() {
  * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
  */
 void Organism::start_protein() {
-    for (int rna_idx = 0; rna_idx < rna_count_; rna_idx++) {
-        int c_pos = rnas[rna_idx].begin;
+    for (RNA& rna : rnas) {
+        if (rna.length < 22) continue;
 
-        if (rnas[rna_idx].length >= 22) {
-            c_pos += 22;
+        int c_pos = rna.begin + 22;
+        c_pos = c_pos >= dna_.length()
+                ? c_pos - dna_.length()
+                : c_pos;
+
+        while (c_pos != rna.end) {
+            if (dna_.shine_dal_start(c_pos)) {
+                rna.start_prot.push_back(c_pos);
+            }
+
+            c_pos++;
             c_pos = c_pos >= dna_.length()
                     ? c_pos - dna_.length()
                     : c_pos;
-
-            while (c_pos != rnas[rna_idx].end) {
-
-                if (dna_.shine_dal_start(c_pos)) {
-                    rnas[rna_idx].start_prot.push_back(c_pos);
-                }
-
-                c_pos++;
-                c_pos = c_pos >= dna_.length()
-                        ? c_pos - dna_.length()
-                        : c_pos;
-            }
         }
     }
 }
-
 
 /**
  * Compute the list of genes/proteins of an Organism
  */
 void Organism::compute_protein() {
     int resize_to = 0;
-
-    for (int rna_idx = 0; rna_idx < rna_count_; rna_idx++) {
-        resize_to += rnas[rna_idx].start_prot.size();
+    for (const RNA& rna : rnas) {
+        resize_to += rna.start_prot.size();
     }
 
     proteins.clear();
     proteins.reserve(resize_to);
 
-    for (int rna_idx = 0; rna_idx < rna_count_; rna_idx++) {
-        for (int protein_idx = 0;
-            //RNA& rna = rnas[rna_idx];
-
-             protein_idx < rnas[rna_idx].start_prot.size();
-             protein_idx++) {
-
-            int protein_start = rnas[rna_idx].start_prot[protein_idx];
+    for (RNA& rna : rnas) {
+        for (int protein_idx = 0; protein_idx < rna.start_prot.size(); protein_idx++) {
+            int protein_start = rna.start_prot[protein_idx];
             int current_position = protein_start + 13;
 
             current_position = current_position >= dna_.length()
                                ? current_position - dna_.length()
                                : current_position;
 
-            int transcribed_start = rnas[rna_idx].begin + 22;
+            int transcribed_start = rna.begin + 22;
             transcribed_start = transcribed_start >= dna_.length()
                                 ? transcribed_start - dna_.length()
                                 : transcribed_start;
@@ -481,8 +460,7 @@ void Organism::compute_protein() {
             }
             transcription_length += 13;
 
-
-            while (rnas[rna_idx].length - transcription_length >= 3) {
+            while (rna.length - transcription_length >= 3) {
                 if (dna_.protein_stop(current_position)) {
                     int prot_length;
 
@@ -497,16 +475,14 @@ void Organism::compute_protein() {
                     }
 
                     if (prot_length >= 3) {
-                        int glob_prot_idx = protein_count_;
-                        protein_count_++;
-
                         proteins.emplace_back
                                            (protein_start,
                                             protein_end,
                                             prot_length,
-                                            rnas[rna_idx].e);
+                                            rna.e);
+                        protein_count_++;
 
-                        rnas[rna_idx].is_coding_ = true;
+                        rna.is_coding_ = true;
                     }
                     break;
                 }
@@ -527,209 +503,197 @@ void Organism::compute_protein() {
  * @param w_max : Maximum width of the triangle generated by a Protein
  */
 void Organism::translate_protein(double w_max) {
-    for (int protein_idx = 0; protein_idx < protein_count_; protein_idx++) {
-        Protein& protein = proteins[protein_idx];
+    for (Protein& protein : proteins) {
+        if (!protein.is_init_) continue;
 
-        if (protein.is_init_) {
-            int c_pos = protein.protein_start;
-            c_pos += 13;
+        int c_pos = protein.protein_start;
+        c_pos += 13;
+        c_pos = c_pos >= dna_.length()
+                ? c_pos - dna_.length()
+                : c_pos;
+
+        int codon_list[64] = {};
+        int codon_idx = 0;
+        int count_loop = 0;
+
+        //printf("Codon list : ");
+        while (count_loop < protein.protein_length / 3 &&
+               codon_idx < 64) {
+            codon_list[codon_idx] = dna_.codon_at(c_pos);
+            //printf("%d ",codon_list[codon_idx]);
+            codon_idx++;
+
+            count_loop++;
+            c_pos += 3;
             c_pos = c_pos >= dna_.length()
                     ? c_pos - dna_.length()
                     : c_pos;
+        }
+        //printf("\n");
 
-            int codon_list[64] = {};
-            int codon_idx = 0;
-            int count_loop = 0;
+        double M = 0.0;
+        double W = 0.0;
+        double H = 0.0;
 
-            //printf("Codon list : ");
-            while (count_loop < protein.protein_length / 3 &&
-                   codon_idx < 64) {
-                codon_list[codon_idx] = dna_.codon_at(c_pos);
-                //printf("%d ",codon_list[codon_idx]);
-                codon_idx++;
+        int nb_m = 0;
+        int nb_w = 0;
+        int nb_h = 0;
 
-                count_loop++;
-                c_pos += 3;
-                c_pos = c_pos >= dna_.length()
-                        ? c_pos - dna_.length()
-                        : c_pos;
-            }
-            //printf("\n");
-
-            double M = 0.0;
-            double W = 0.0;
-            double H = 0.0;
-
-            int nb_m = 0;
-            int nb_w = 0;
-            int nb_h = 0;
-
-            bool bin_m = false; // Initializing to false will yield a conservation of the high weight bit
-            bool bin_w = false; // when applying the XOR operator for the Gray to standard conversion
-            bool bin_h = false;
+        bool bin_m = false; // Initializing to false will yield a conservation of the high weight bit
+        bool bin_w = false; // when applying the XOR operator for the Gray to standard conversion
+        bool bin_h = false;
 
 
-            for (int i = 0; i < codon_idx; i++) {
-                switch (codon_list[i]) {
-                    case CODON_M0 : {
-                        // M codon found
-                        nb_m++;
+        for (int i = 0; i < codon_idx; i++) {
+            switch (codon_list[i]) {
+                case CODON_M0 : {
+                    // M codon found
+                    nb_m++;
 
-                        // Convert Gray code to "standard" binary code
-                        bin_m ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
+                    // Convert Gray code to "standard" binary code
+                    bin_m ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
 
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ M <<= 1;
-                        M *= 2;
+                    // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
+                    //~ M <<= 1;
+                    M *= 2;
 
-                        // Add this nucleotide's contribution to M
-                        if (bin_m) M += 1;
+                    // Add this nucleotide's contribution to M
+                    if (bin_m) M += 1;
 
-                        break;
-                    }
-                    case CODON_M1 : {
-                        // M codon found
-                        nb_m++;
+                    break;
+                }
+                case CODON_M1 : {
+                    // M codon found
+                    nb_m++;
 
-                        // Convert Gray code to "standard" binary code
-                        bin_m ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
+                    // Convert Gray code to "standard" binary code
+                    bin_m ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
 
-                        // A lower-than-the-previous-lowest bit was found, make a left bitwise shift
-                        //~ M <<= 1;
-                        M *= 2;
+                    // A lower-than-the-previous-lowest bit was found, make a left bitwise shift
+                    //~ M <<= 1;
+                    M *= 2;
 
-                        // Add this nucleotide's contribution to M
-                        if (bin_m) M += 1;
+                    // Add this nucleotide's contribution to M
+                    if (bin_m) M += 1;
 
-                        break;
-                    }
-                    case CODON_W0 : {
-                        // W codon found
-                        nb_w++;
+                    break;
+                }
+                case CODON_W0 : {
+                    // W codon found
+                    nb_w++;
 
-                        // Convert Gray code to "standard" binary code
-                        bin_w ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
+                    // Convert Gray code to "standard" binary code
+                    bin_w ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
 
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ W <<= 1;
-                        W *= 2;
+                    // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
+                    //~ W <<= 1;
+                    W *= 2;
 
-                        // Add this nucleotide's contribution to W
-                        if (bin_w) W += 1;
+                    // Add this nucleotide's contribution to W
+                    if (bin_w) W += 1;
 
-                        break;
-                    }
-                    case CODON_W1 : {
-                        // W codon found
-                        nb_w++;
+                    break;
+                }
+                case CODON_W1 : {
+                    // W codon found
+                    nb_w++;
 
-                        // Convert Gray code to "standard" binary code
-                        bin_w ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
+                    // Convert Gray code to "standard" binary code
+                    bin_w ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
 
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ W <<= 1;
-                        W *= 2;
+                    // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
+                    //~ W <<= 1;
+                    W *= 2;
 
-                        // Add this nucleotide's contribution to W
-                        if (bin_w) W += 1;
+                    // Add this nucleotide's contribution to W
+                    if (bin_w) W += 1;
 
-                        break;
-                    }
-                    case CODON_H0 :
-                    case CODON_START : // Start codon codes for the same amino-acid as H0 codon
-                    {
-                        // H codon found
-                        nb_h++;
+                    break;
+                }
+                case CODON_H0 :
+                case CODON_START : // Start codon codes for the same amino-acid as H0 codon
+                {
+                    // H codon found
+                    nb_h++;
 
-                        // Convert Gray code to "standard" binary code
-                        bin_h ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
+                    // Convert Gray code to "standard" binary code
+                    bin_h ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
 
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ H <<= 1;
-                        H *= 2;
+                    // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
+                    //~ H <<= 1;
+                    H *= 2;
 
-                        // Add this nucleotide's contribution to H
-                        if (bin_h) H += 1;
+                    // Add this nucleotide's contribution to H
+                    if (bin_h) H += 1;
 
-                        break;
-                    }
-                    case CODON_H1 : {
-                        // H codon found
-                        nb_h++;
+                    break;
+                }
+                case CODON_H1 : {
+                    // H codon found
+                    nb_h++;
 
-                        // Convert Gray code to "standard" binary code
-                        bin_h ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
+                    // Convert Gray code to "standard" binary code
+                    bin_h ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
 
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ H <<= 1;
-                        H *= 2;
+                    // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
+                    //~ H <<= 1;
+                    H *= 2;
 
-                        // Add this nucleotide's contribution to H
-                        if (bin_h) H += 1;
+                    // Add this nucleotide's contribution to H
+                    if (bin_h) H += 1;
 
-                        break;
-                    }
+                    break;
                 }
             }
-
-            protein.protein_length = codon_idx;
-
-
-            //  ----------------------------------------------------------------------------------
-            //  2) Normalize M, W and H values in [0;1] according to number of codons of each kind
-            //  ----------------------------------------------------------------------------------
-            protein.m =
-                    nb_m != 0 ? M / (pow(2, nb_m) - 1) : 0.5;
-            protein.w =
-                    nb_w != 0 ? W / (pow(2, nb_w) - 1) : 0.0;
-            protein.h =
-                    nb_h != 0 ? H / (pow(2, nb_h) - 1) : 0.5;
-
-            //  ------------------------------------------------------------------------------------
-            //  3) Normalize M, W and H values according to the allowed ranges (defined in macros.h)
-            //  ------------------------------------------------------------------------------------
-            // x_min <= M <= x_max
-            // w_min <= W <= w_max
-            // h_min <= H <= h_max
-            protein.m =
-                    (X_MAX - X_MIN) *
-                    protein.m +
-                    X_MIN;
-            protein.w =
-                    (w_max - W_MIN) *
-                    protein.w +
-                    W_MIN;
-            protein.h =
-                    (H_MAX - H_MIN) *
-                    protein.h +
-                    H_MIN;
-
-            if (nb_m == 0 || nb_w == 0 || nb_h == 0 ||
-                protein.w == 0.0 ||
-                protein.h == 0.0) {
-                protein.is_functional = false;
-            } else {
-                protein.is_functional = true;
-            }
         }
+
+        protein.protein_length = codon_idx;
+
+
+        //  ----------------------------------------------------------------------------------
+        //  2) Normalize M, W and H values in [0;1] according to number of codons of each kind
+        //  ----------------------------------------------------------------------------------
+        protein.m =
+                nb_m != 0 ? M / (pow(2, nb_m) - 1) : 0.5;
+        protein.w =
+                nb_w != 0 ? W / (pow(2, nb_w) - 1) : 0.0;
+        protein.h =
+                nb_h != 0 ? H / (pow(2, nb_h) - 1) : 0.5;
+
+        //  ------------------------------------------------------------------------------------
+        //  3) Normalize M, W and H values according to the allowed ranges (defined in macros.h)
+        //  ------------------------------------------------------------------------------------
+        // x_min <= M <= x_max
+        // w_min <= W <= w_max
+        // h_min <= H <= h_max
+        protein.m =
+                (X_MAX - X_MIN) *
+                protein.m +
+                X_MIN;
+        protein.w =
+                (w_max - W_MIN) *
+                protein.w +
+                W_MIN;
+        protein.h =
+                (H_MAX - H_MIN) *
+                protein.h +
+                H_MIN;
+
+        protein.is_functional = !(nb_m == 0 || nb_w == 0 || nb_h == 0 || protein.w == 0.0 || protein.h == 0.0);
     }
 
 
     std::map<int, Protein *> lookup;
 
-    for (int protein_idx = 0; protein_idx < protein_count_; protein_idx++) {
-        Protein& protein = proteins[protein_idx];
-
+    for (Protein& protein : proteins) {
         if (protein.is_init_) {
             if (lookup.find(protein.protein_start) == lookup.end()) {
                 lookup[protein.protein_start] = &protein;
             } else {
-                lookup[protein.protein_start]->e +=
-                        protein.e;
+                lookup[protein.protein_start]->e += protein.e;
                 protein.is_init_ = false;
             }
         }
-
     }
 }
 
@@ -740,9 +704,7 @@ void Organism::compute_phenotype() {
     double activ_phenotype[300]{};
     double inhib_phenotype[300]{};
 
-    for (int protein_idx = 0; protein_idx < protein_count_; protein_idx++) {
-        Protein& protein = proteins[protein_idx];
-
+    for (const Protein& protein : proteins) {
         if (protein.is_init_ &&
             fabs(protein.w) >= 1e-15 &&
             fabs(protein.h) >= 1e-15 &&
@@ -808,7 +770,6 @@ void Organism::compute_phenotype() {
             }
         }
     }
-
 
     for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
         if (activ_phenotype[fuzzy_idx] > 1)
