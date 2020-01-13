@@ -47,36 +47,27 @@ void Dna::do_switch(int pos) {
 }
 
 int Dna::promoter_at(int pos) {
-  return seq_.getHammingDistance(pos, PROM_SEQ_LEN, PROM_SEQ);
+    return seq_.getHammingDistance(pos, PROM_SEQ_LEN, PROM_SEQ);
 }
 
 int Dna::terminator_at(int pos) {
-    int_t subseq = seq_.getSequence(pos+10-4+1, 4);
-    int_t temp = (lookuptable[ subseq & 0xff ]<<24 |
-                         lookuptable[ (subseq >> 8) & 0xff ]<<16 |
-                         lookuptable[ (subseq >> 16 )& 0xff ]<< 8 |
-                         lookuptable[ (subseq >>24 ) & 0xff ])
-            >> (sizeof(int)*8-4);
-
-    return seq_.getHammingDistance(pos, 4, temp);
+    int_t subseq_rev = seq_.getSequence(pos+10-4+1, 4);
+    return seq_.getHammingDistanceRev(pos, 4, subseq_rev);
 }
 
 bool Dna::shine_dal_start(int pos) {
-  int_t first_part = (SHINE_DAL_SEQ&0b111111000)>>3;
-  int_t second_part = (SHINE_DAL_SEQ&0b000000111);
+    const int_t first_part_rev = (SHINE_DAL_SEQ_REV&0b000111111);
+    const int_t second_part_rev = (SHINE_DAL_SEQ_REV&0b111000000)>>6;
 
-  bool start = seq_.search(pos, 6, first_part);
-
-  if(start)
-      start = seq_.search(pos+10, 3, second_part);
-
-  return start;
+    return seq_.searchRev(pos, 6, first_part_rev) &&
+           seq_.searchRev(pos+10, 3, second_part_rev);
 }
 
 bool Dna::protein_stop(int pos) {
-  return seq_.search(pos, PROTEIN_END_LEN, PROTEIN_END);
+    return seq_.searchRev(pos, PROTEIN_END_LEN, PROTEIN_END_REV);
 }
 
 int Dna::codon_at(int pos) {
-  return seq_.getSequence(pos, CODON_SIZE);
+    return seq_.getSequence(pos, CODON_SIZE);
 }
+

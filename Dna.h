@@ -18,11 +18,14 @@ constexpr int8_t CODON_SIZE = 3;
 
 typedef uint32_t int_t;
 
-constexpr const int PROM_SEQ = 0b0101011001110010010110;
+constexpr const int PROM_SEQ     = 0b0101011001110010010110;
+constexpr const int PROM_SEQ_REV = 0b0110100100111001101010;
 constexpr const int PROM_SEQ_LEN = 22; 
-constexpr const int SHINE_DAL_SEQ = 0b011011000;
+constexpr const int SHINE_DAL_SEQ     = 0b011011000;
+constexpr const int SHINE_DAL_SEQ_REV = 0b000110110;
 constexpr const int SHINE_DAL_SEQ_LEN = 9;
-constexpr const int PROTEIN_END = 0b001; // CODON_STOP
+constexpr const int PROTEIN_END     = 0b001; // CODON_STOP
+constexpr const int PROTEIN_END_REV = 0b100; // POTS_NODOC
 constexpr const int PROTEIN_END_LEN = 3;
 
 class ExpManager;
