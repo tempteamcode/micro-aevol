@@ -41,8 +41,8 @@ using namespace std;
  * @param clone : The organism to clone
  */
 Organism::Organism(const Organism& other)
-: rna_count_(0)
-, parent_length_(other.length())
+//: rna_count_(0)
+: parent_length_(other.length())
 , dna_(other.dna_)
 , promoters_(other.promoters_)
 {
@@ -54,7 +54,7 @@ Organism::Organism(const Organism& other)
  * @param backup_file : gzFile to read from
  */
 Organism::Organism(gzFile backup_file)
-: rna_count_(0)
+//: rna_count_(0)
 {
     load(backup_file);
 }
@@ -106,20 +106,20 @@ void Organism::compute_protein_stats() {
     nb_coding_RNAs = 0;
     nb_non_coding_RNAs = 0;
 
-    for (int i = 0; i < rna_count_; i++) {
-        if (rnas[i].is_coding_)
+    for (const RNA& rna : rnas) {
+        if (rna.is_coding_)
             nb_coding_RNAs++;
         else
             nb_non_coding_RNAs++;
     }
 
-    for (int i = 0; i < protein_count_; i++) {
-        if (proteins[i].is_functional) {
+    for (const Protein& protein : proteins) {
+        if (protein.is_functional) {
             nb_func_genes++;
         } else {
             nb_non_func_genes++;
         }
-        if (proteins[i].h > 0) {
+        if (protein.h > 0) {
             nb_genes_activ++;
         } else {
             nb_genes_inhib++;
@@ -331,7 +331,7 @@ void Organism::compute_RNA() {
                 rna_end,
                 1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
                 rna_length);
-            rna_count_++;
+            //rna_count_++;
         }
     }
 }
@@ -395,7 +395,7 @@ void Organism::opt_prom_compute_RNA() {
                     rna_end,
                     1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
                     rna_length);
-                rna_count_++;
+                //rna_count_++;
             }
         }
     }
@@ -480,7 +480,7 @@ void Organism::compute_protein() {
                                             protein_end,
                                             prot_length,
                                             rna.e);
-                        protein_count_++;
+                        //protein_count_++;
 
                         rna.is_coding_ = true;
                     }

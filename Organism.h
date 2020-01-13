@@ -56,8 +56,8 @@ public:
  * @param indiv_id : Unique Identification Number
  */
 Organism(Threefry::Gen&& rng, int length, int indiv_id)
-: rna_count_(0)
-, dna_(length, std::move(rng))
+//: rna_count_(0)
+: dna_(length, std::move(rng))
 , parent_length_(length)
 , indiv_id_(indiv_id)
 {
@@ -71,8 +71,8 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
  * @param indiv_id : Unique Identification Number
  */
 /*Organism(int length, char *genome, int indiv_id)
-: rna_count_(0)
-, parent_length_(length)
+//: rna_count_(0)
+: parent_length_(length)
 , dna_(length, genome)
 , indiv_id_(indiv_id)
 {
@@ -89,11 +89,21 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     inline int length() const { return dna_.length(); };
 
-    void reset_mutation_stats();
+    void apply_mutation(int pos);
 
+    void start_stop_RNA();
+    void compute_RNA();
+    void opt_prom_compute_RNA();
+    void start_protein();
+    void compute_protein();
+    void translate_protein(double w_max);
+    void compute_phenotype();
+    void compute_fitness(double selection_pressure, double* target);
+
+    void reset_mutation_stats();
     void compute_protein_stats();
 
-
+private:
     // Map position (int) to Promoter
     std::map<int, Promoter> promoters_;
 
@@ -104,6 +114,7 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
     double phenotype[300];
     double delta[300];
 
+public:
     double fitness;
     double metaerror;
 
@@ -112,9 +123,6 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     int indiv_id_;
     int parent_id_;
-
-    int protein_count_ = 0;
-    int rna_count_ = 0;
 
     int global_id = -1;
 
@@ -131,10 +139,7 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
     int nb_swi_ = 0;
     int nb_mut_ = 0;
 
-//private:
-
-    void apply_mutation(int pos);
-
+private:
     void remove_all_promoters();
 
     // void remove_promoters_around(int32_t pos);
@@ -180,15 +185,6 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
         return a;
         //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
     }
-
-    void start_stop_RNA();
-    void compute_RNA();
-    void opt_prom_compute_RNA();
-    void start_protein();
-    void compute_protein();
-    void translate_protein(double w_max);
-    void compute_phenotype();
-    void compute_fitness(double selection_pressure, double* target);
 };
 
 
