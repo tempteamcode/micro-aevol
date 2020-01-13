@@ -29,25 +29,24 @@
 #ifndef RAEVOL_CUDA_MUTATIONEVENT_H
 #define RAEVOL_CUDA_MUTATIONEVENT_H
 
-#include <cstdint>
-#include <vector>
-
+/*
 enum MutationEventType {
     DO_SWITCH           = 0,
     NONE
 };
+*/
 
 /**
  * Mutation event class
  */
 
+/*
 struct MutationEvent {
-    MutationEvent(int32_t pos) : type(DO_SWITCH), pos_1(pos) { }
+    MutationEvent(int pos) : type(DO_SWITCH), pos_1(pos) { }
 
-    const int32_t type;
-    const int32_t pos_1;
+    const int type;
+    const int pos_1;
 };
-
-
+*/
 
 #endif //RAEVOL_CUDA_MUTATIONEVENT_H

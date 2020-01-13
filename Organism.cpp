@@ -295,10 +295,3 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     }
 }
 
-void Organism::apply_mutations(DnaMutator* dna_mutator) {
-    auto& mutation_list = dna_mutator->mutation_list_;
-    for (auto mutation_pos: mutation_list) {
-        apply_mutation(mutation_pos.pos_1);
-    }
-}
-

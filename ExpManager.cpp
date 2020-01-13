@@ -387,7 +387,7 @@ ExpManager::~ExpManager() {
 
 void ExpManager::apply_mutation(int indiv_id)
 {
-    internal_organisms_[indiv_id]->apply_mutations(dna_mutator_array_[indiv_id]);
+    dna_mutator_array_[indiv_id]->apply_mutations(*(internal_organisms_[indiv_id]));
 }
 
 /**

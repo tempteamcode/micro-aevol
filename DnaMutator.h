@@ -32,7 +32,7 @@
 
 #include "Threefry.h"
 #include "MutationEvent.h"
-
+class Organism;
 
 /**
  * Class that generates the mutation events for a given Organism
@@ -48,55 +48,33 @@ public:
  * @param mut_prng : PRNG to simulate the mutation
  * @param length  : Size of the DNA at the initialization
  * @param mutation_rate : Mutation rate of the organisms
- * @param indiv_id : Unique identification number for the Organism
  */
 DnaMutator(Threefry::Gen&& mut_prng, int length, double mutation_rate, int indiv_id)
 : mut_prng_(std::move(mut_prng))
 , length_(length)
 , mutation_rate_(mutation_rate)
-, id_(indiv_id)
 {
 }
 
     void generate_mutations();
 
+    void apply_mutations(Organism& organism);
+
+    inline bool hasMutate() const { return (!mutation_list_.empty()); }
+
+private:
     void generate_next_mutation(int length);
 
-    bool mutation_available() const { return (cpt_mut_ > 0); }
+    std::vector<int> mutation_list_;
 
-    std::vector<MutationEvent> mutation_list_;
-
-    inline bool hasMutate() const { return hasMutate_; }
-
-    void setMutate(bool mutate) { hasMutate_ = mutate; }
-
-    static int mod(int a, int b) {
-        assert(b > 0);
-
-        while (a < 0) a += b;
-        while (a >= b) a -= b;
-
-        return a;
-    }
-
-// private:
-    int id_;
     Threefry::Gen mut_prng_;
     int length_;
 
     double mutation_rate_;
 
-
     //--------------------------- Mutation counters
     int nb_swi_;
     int nb_mut_;
-
-    int cpt_mut_;
-
-    int min_genome_length_ = 10;
-    int max_genome_length_ = 10000000;
-
-    bool hasMutate_ = false;
 };
 
 
