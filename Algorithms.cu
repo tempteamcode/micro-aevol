@@ -57,8 +57,9 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
   }
 
   // Create shorthands
-  auto seq0 = exp_m->internal_organisms_[0]->dna_->seq_.data();
-  auto len0 = exp_m->internal_organisms_[0]->dna_->seq_.size();
+  std::string seq0string = exp_m->internal_organisms_[0]->dna_->seq_.export_string();
+  auto seq0 = seq0string.data();
+  auto len0 = seq0string.size();
 
     allocated_global_dna_size = global_dna_size*5;
 
@@ -278,7 +279,7 @@ void search_start_stop_RNA(size_t* dna_size, char* dna, size_t* dna_offset, int*
         for (int motif_id = 0; motif_id < 26; motif_id++) {
             if (motif_id < 22) {
                 prom_dist[motif_id] =
-                        PROM_SEQ[motif_id] ==
+                        PROM_SEQ_BIT(motif_id) ==
                         dna[dna_pos + motif_id >= dna_size[indiv_id] ? dna_offset[indiv_id]+ dna_pos + motif_id - dna_size[indiv_id]
                                                                      : dna_offset[indiv_id]+ dna_pos + motif_id]
                         ? 0
@@ -512,7 +513,7 @@ void compute_start_protein(int8_t* start_protein, size_t* dna_size, size_t* dna_
                                                      c_pos,t_pos,
                                                      rna[globalIdx].begin,rna[globalIdx].end,
                                                      dna_size[indiv_id]);assert(0);}
-                        if (dna[dna_offset[indiv_id]+t_pos] == SHINE_DAL_SEQ[k]) {
+                        if (dna[dna_offset[indiv_id]+t_pos] == SHINE_DAL_SEQ_BIT(k)) {
                             start = true;
                         } else {
                             start = false;
@@ -654,7 +655,7 @@ void compute_proteins( int8_t* start_protein, size_t* dna_size, size_t* dna_offs
                       start_protein_pos - dna_size[indiv_id] + k :
                       start_protein_pos + k;
 
-                if (dna[dna_offset[indiv_id]+t_k] == PROTEIN_END[k]) {
+                if (dna[dna_offset[indiv_id]+t_k] == PROTEIN_END_BIT(k)) {
                     is_protein = true;
                 } else {
                     is_protein = false;
