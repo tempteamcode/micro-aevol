@@ -33,12 +33,13 @@
 class Protein {
 public:
     Protein() {};
-    Protein(int t_protein_start, int t_protein_end, int t_protein_length, double t_e) {
-        protein_start = t_protein_start;
-        protein_end = t_protein_end;
-        protein_length = t_protein_length;
-        e = t_e;
-        is_init_ = true;
+    Protein(int t_protein_start, int t_protein_end, int t_protein_length, double t_e)
+    : protein_start(t_protein_start)
+    , protein_end(t_protein_end)
+    , protein_length(t_protein_length)
+    , e(t_e)
+    , is_init_(true)
+    {
     }
 
     int protein_start;

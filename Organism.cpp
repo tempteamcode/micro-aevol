@@ -37,12 +37,10 @@ using namespace std;
 /**
  * Constructor to create a clone of a given Organism
  *
- * @param exp_m : Related ExpManager object
  * @param clone : The organism to clone
  */
 Organism::Organism(const Organism& other)
-: exp_m_(other.exp_m_)
-, rna_count_(0)
+: rna_count_(0)
 , parent_length_(other.length())
 , dna_(other.dna_)
 , promoters_(other.promoters_)
@@ -52,12 +50,10 @@ Organism::Organism(const Organism& other)
 /**
  * Create an Organism from a backup/checkpointing file
  *
- * @param exp_m : Related ExpManager object
  * @param backup_file : gzFile to read from
  */
-Organism::Organism(ExpManager *exp_m, gzFile backup_file)
-: exp_m_(exp_m)
-, rna_count_(0)
+Organism::Organism(gzFile backup_file)
+: rna_count_(0)
 {
     load(backup_file);
 }
@@ -156,7 +152,7 @@ void Organism::apply_mutation(int pos) {
 Optimize promoters search
  **/
 
-
+/*
 void Organism::remove_promoters_around(int32_t pos) {
     if (dna_.length() >= PROM_SIZE) {
         remove_promoters_starting_between(mod(pos - PROM_SIZE + 1,
@@ -166,6 +162,7 @@ void Organism::remove_promoters_around(int32_t pos) {
         remove_all_promoters();
     }
 }
+*/
 
 void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
     if (mod(pos_1 - pos_2, dna_.length()) >= PROM_SIZE) {
@@ -177,19 +174,21 @@ void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
     }
 }
 
-void Organism::look_for_new_promoters_around(int32_t pos_1, int32_t pos_2) {
-    if (dna_.length() >= PROM_SIZE) {
-        look_for_new_promoters_starting_between(
-                mod(pos_1 - PROM_SIZE + 1,
-                    dna_.length()), pos_2);
-    }
-}
-
+/*
 void Organism::look_for_new_promoters_around(int32_t pos) {
     if (dna_.length() >= PROM_SIZE) {
         look_for_new_promoters_starting_between(
                 mod(pos - PROM_SIZE + 1, dna_.length()),
                 pos);
+    }
+}
+*/
+
+void Organism::look_for_new_promoters_around(int32_t pos_1, int32_t pos_2) {
+    if (dna_.length() >= PROM_SIZE) {
+        look_for_new_promoters_starting_between(
+                mod(pos_1 - PROM_SIZE + 1,
+                    dna_.length()), pos_2);
     }
 }
 
@@ -218,11 +217,11 @@ void Organism::remove_promoters_starting_before(int32_t pos) {
     promoters_.erase(promoters_.begin(), promoters_.upper_bound(pos-1));
 }
 
-
-/** LOOK **/
+/*
 void Organism::locate_promoters() {
     look_for_new_promoters_starting_between(0, dna_.length());
 }
+*/
 
 void Organism::add_new_promoter(int32_t position, int8_t error) {
     // TODO: Insertion should not always occur, especially if promoter become better or worse ?

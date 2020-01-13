@@ -38,7 +38,6 @@
 #include "RNA.h"
 #include "Protein.h"
 #include "Dna.h"
-#include "ExpManager.h"
 
 //class ExpManager;
 
@@ -52,14 +51,13 @@ public:
 /**
  * Constructor to generate a random organism (i.e. an organism with a random DNA)
  *
- * @param exp_m : Related ExpManager object
+ * @param rng : random generator
  * @param length : Length of the generated random DNA
  * @param indiv_id : Unique Identification Number
  */
-Organism(ExpManager *exp_m, int length, int indiv_id)
-: exp_m_(exp_m)
-, rna_count_(0)
-, dna_(length, std::move(exp_m->rng_->gen(indiv_id, Threefry::MUTATION)))
+Organism(Threefry::Gen&& rng, int length, int indiv_id)
+: rna_count_(0)
+, dna_(length, std::move(rng))
 , parent_length_(length)
 , indiv_id_(indiv_id)
 {
@@ -68,14 +66,12 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
 /**
  * Create an organism with a given genome
  *
- * @param exp_m : Related ExpManager object
  * @param length : Length of the generated random DNA
  * @param genome : Genome to assign to the organism
  * @param indiv_id : Unique Identification Number
  */
-/*Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
-: exp_m_(exp_m)
-, rna_count_(0)
+/*Organism(int length, char *genome, int indiv_id)
+: rna_count_(0)
 , parent_length_(length)
 , dna_(length, genome)
 , indiv_id_(indiv_id)
@@ -84,7 +80,7 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
 
     Organism(const Organism& other);
 
-    Organism(ExpManager *exp_m, gzFile backup_file);
+    Organism(gzFile backup_file);
 
     ~Organism() = default;
 
@@ -121,8 +117,6 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
     int protein_count_ = 0;
     int rna_count_ = 0;
 
-    ExpManager *exp_m_;
-
     int global_id = -1;
 
     int usage_count_ = 1;
@@ -144,7 +138,7 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
 
     void remove_all_promoters();
 
-    void remove_promoters_around(int32_t pos);
+    // void remove_promoters_around(int32_t pos);
 
     void remove_promoters_around(int32_t pos_1, int32_t pos_2);
 
@@ -154,11 +148,11 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
 
     void remove_promoters_starting_before(int32_t pos);
 
-    void locate_promoters();
+    // void locate_promoters();
+
+    // void look_for_new_promoters_around(int32_t pos);
 
     void look_for_new_promoters_around(int32_t pos_1, int32_t pos_2);
-
-    void look_for_new_promoters_around(int32_t pos);
 
     void look_for_new_promoters_starting_between(int32_t pos_1, int32_t pos_2);
 
@@ -169,7 +163,6 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
     void add_new_promoter(int32_t position, int8_t error);
 
     inline int32_t mod(int32_t a, int32_t b) {
-
         assert(b > 0);
 
         while (a < 0) a += b;
@@ -180,7 +173,6 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
     }
 
     inline int64_t mod(int64_t a, int64_t b) {
-
         assert(b > 0);
 
         while (a < 0) a += b;

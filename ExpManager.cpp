@@ -127,7 +127,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     double r_compare = 0;
 
     while (r_compare >= 0) {
-        auto random_organism = std::make_shared<Organism>(this, init_length_dna, 0);
+        auto random_organism = std::make_shared<Organism>(std::move(rng_->gen(0, Threefry::MUTATION)), init_length_dna, 0);
         internal_organisms_[0] = random_organism;
 
         start_stop_RNA(0);
@@ -325,7 +325,7 @@ void ExpManager::load(int t) {
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(this, exp_backup_file);
+                std::make_shared<Organism>(exp_backup_file);
         // promoters have to be recomputed, they are not save in the backup
         start_stop_RNA(indiv_id);
     }
