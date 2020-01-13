@@ -448,7 +448,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     }
 
     stats_best.compute_best(*(best_indiv.get()));
-    stats_mean.compute_average(*this);
+    stats_mean.compute_average(prev_internal_organisms_, nb_indivs_);
 
     stats_best.write_best();
     stats_mean.write_average();

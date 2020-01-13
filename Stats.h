@@ -28,6 +28,7 @@
 #ifndef PDC_MINI_AEVOL_STATS_H
 #define PDC_MINI_AEVOL_STATS_H
 
+#include <memory>
 #include <cstdint>
 #include <fstream>
 #include <limits>
@@ -55,7 +56,7 @@ public:
     }
 
     void compute_best(const Organism& best_indiv);
-    void compute_average(ExpManager& exp_m);
+    void compute_average(const std::shared_ptr<Organism>* organisms, int pop_size_);
 
     void write_best();
     void write_average();

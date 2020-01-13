@@ -113,19 +113,21 @@ class ExpManager {
         int* next_generation_reproducer_;
 private:
         DnaMutator** dna_mutator_array_;
-public:
 
+public: // used in Algorithms.cu
         int nb_indivs_;
 
         std::unique_ptr<Threefry> rng_;
 
+private:
         double geometric_area_;
 
+public: // used in Algorithms.cu
         double* target;
 
+private:
         int selection_pressure_;
 
-private:
         Stats stats_best;
         Stats stats_mean;
 
