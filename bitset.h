@@ -245,31 +245,60 @@ public:
   {
     return test(pos);
   }
-  
+
   void import_string(const char* bits, size_t size)
   {
     used = size;
     data.redim_discard(size / sizeof_int + 1);
     
-    //FIXME to improve
+    /*
     for (size_t pos = 0; pos < size; pos++)
     {
       set(pos, (*bits++ != '0'));
-    } 
+    }
+    */
+    
+    size_t count = used;
+    size_t index = 0;
+    int_t val = 0;
+    int_t mask = 1;
+    while (count --> 0) {
+      if (*bits++ == '1') val |= mask;
+      if ((mask <<= 1) == 0) {
+        data[index++] = val;
+        val = 0;
+        mask = 1;
+      }
+    }
+    if (mask != 1) data[index++] = val;
   }
   
   std::string export_string() const
   {
     std::string result;
     char* buffer = new char[used + 1];
+    char* bits = buffer;
     
-    //FIXME to improve
+    /*
     for (size_t pos = 0; pos < used; pos++)
     {
       buffer[pos] = (test(pos) ? '1' : '0');
     }
+    */
     
-    buffer[used] = '\0';
+    size_t count = used;
+    size_t index = 0;
+    int_t val = 0;
+    int_t mask = 0;
+    while (count --> 0) {
+      if ((mask <<= 1) == 0) {
+        val = data[index++];
+        mask = 1;
+      }
+      *bits++ = (val & mask) ? '1' : '0';
+    }
+    
+    *bits = '\0';
     result = buffer;
     delete[] buffer;
     return result;
