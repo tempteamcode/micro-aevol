@@ -34,7 +34,7 @@ cudaError_t checkCuda(cudaError_t result)
 }
 
 
-constexpr int32_t PROMOTER_ARRAY_SIZE = 10000;
+// constexpr int32_t PROMOTER_ARRAY_SIZE = 10000;
 
 void transfer_in(ExpManager* exp_m, bool first_gen) {
     exp_m->rng_->initDevice();
@@ -410,7 +410,7 @@ void compute_RNA( int8_t* dna_term, size_t* dna_size, size_t* dna_offset, pRNA* 
         int k = rnas[globalIdx].begin + 22;
         k = k >= dna_size[indiv_id] ? k - dna_size[indiv_id] : k;
         int k_end = k;
-        bool found=false;
+        //bool found=false;
 
         do {
 
@@ -451,7 +451,7 @@ void compute_RNA( int8_t* dna_term, size_t* dna_size, size_t* dna_offset, pRNA* 
                     //assert(rnas[globalIdx].end<dna_size[indiv_id]);
                 }
 
-                found=true;
+                //found=true;
                 break;
             }
 
@@ -722,7 +722,7 @@ void translate_proteins( pProtein* protein, size_t* dna_size, char* dna,  size_t
             int8_t codon_idx = 0;
             int32_t count_loop = 0;
 
-            bool contin = true;
+            //bool contin = true;
 
 
             while (count_loop < protein[local_protein_idx].protein_length / 3 && codon_idx < 64) {
@@ -1264,6 +1264,7 @@ void compute_tab_mutations_offset(int* nb_mutations, int* mutations_offset) {
     }
 }
 
+/*
 __device__ static int mod(int a, int b)
 {
 
@@ -1274,6 +1275,7 @@ __device__ static int mod(int a, int b)
 
     return a;
 }
+*/
 
 __global__
 void predict_size_v2(size_t* dna_size, size_t* next_gen_dna_size, GPUDnaMutator* dna_mutator_list,
@@ -1284,7 +1286,7 @@ void predict_size_v2(size_t* dna_size, size_t* next_gen_dna_size, GPUDnaMutator*
                      int min_genome_length, int nb_indiv) {
     const int indiv_id = blockIdx.x;
 
-    int random_value;
+    // int random_value;
 
     int transient_size = dna_size[next_generation_reproducer[indiv_id]];
 
@@ -1297,7 +1299,7 @@ void predict_size_v2(size_t* dna_size, size_t* next_gen_dna_size, GPUDnaMutator*
 
                 int pos = rng.random(transient_size);
 
-                tab_mut[mutations_offset[indiv_id]+mut_idx].type_ = MutationEventType::DO_SWITCH;
+                tab_mut[mutations_offset[indiv_id]+mut_idx].type_ = 0; //MutationEventType::DO_SWITCH;
                 tab_mut[mutations_offset[indiv_id]+mut_idx].pos_1_ = pos;
 
     }
@@ -1375,7 +1377,7 @@ __global__ void do_mutation_v2(TypeMutation* tab_mut,
             auto &mut = tab_mut[mutations_offset[indiv_id]+nb_events - 1];
 
             switch (mut.type_) {
-                case DO_SWITCH:
+                case 0: // DO_SWITCH
                     if (locus == mut.pos_1_)
                         mutate = not mutate;
                     break;

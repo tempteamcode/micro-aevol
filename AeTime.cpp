@@ -28,6 +28,3 @@
 
 int AeTime::time_ = 0;
 
-int time() {
-    return AeTime::time();
-}

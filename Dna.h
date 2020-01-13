@@ -4,16 +4,13 @@
 
 #pragma once
 
-#include <cstdio>
 #include <cstring>
-#include <cassert>
-#include <cstdint>
 #include <vector>
 #include <zlib.h>
 
 #include "Threefry.h"
 
-constexpr int8_t CODON_SIZE = 3;
+constexpr int CODON_SIZE = 3;
 
 constexpr const char* PROM_SEQ = "0101011001110010010110";
 constexpr const char* SHINE_DAL_SEQ = "011011000";
@@ -23,13 +20,13 @@ class Dna {
 public:
   Dna() = default;
 
-  inline Dna(const Dna& clone) : seq_(clone.seq_) { }
+  Dna(const Dna& other) = default;
+
+  inline Dna(int length) : seq_(length) { }
+
+  // inline Dna(int length, char* genome) : seq_(length) { strcpy(seq_.data(), genome); }
 
   Dna(int length, Threefry::Gen&& rng);
-
-  inline Dna(char* genome, int length) { strcpy(seq_.data(), genome); }
-
-  Dna(int length) : seq_(length) { }
 
   ~Dna() = default;
 
@@ -38,9 +35,12 @@ public:
   void save(gzFile backup_file);
   void load(gzFile backup_file);
 
-  inline void set(int pos, char c) { seq_[pos] = c; };
-
-  void do_switch(int pos);
+  inline void do_switch(int pos) {
+    if (seq_[pos] == '0')
+      seq_[pos] = '1';
+    else
+      seq_[pos] = '0';
+  }
 
   int promoter_at(int pos);
 
@@ -53,6 +53,6 @@ public:
   int codon_at(int pos);
 
 public:
-  std::vector<char> seq_;
+  std::vector<char> seq_; // accessed in Algorithms.cu
 };
 

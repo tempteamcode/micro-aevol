@@ -156,7 +156,8 @@ void Organism::compute_protein_stats() {
  * @param pos : the position where to switch the base-pair
  * @return
  */
-bool Organism::do_switch(int pos) {
+
+void Organism::apply_mutation(int pos) {
     dna_.do_switch(pos);
 
     // Remove promoters containing the switched base
@@ -166,24 +167,10 @@ bool Organism::do_switch(int pos) {
     if (length() >= PROM_SIZE)
         look_for_new_promoters_around(pos, mod(pos + 1, length()));
 
-    return true;
+    nb_swi_++;
+    nb_mut_++;
 }
 
-/**
- * Apply all the mutation events of the organism on its DNA
- */
-void Organism::apply_mutations(DnaMutator* dna_mutator) {
-    auto mutation_list = dna_mutator->mutation_list_;
-
-    for (const auto mutation: mutation_list) {
-        if (mutation.type == DO_SWITCH) {
-            do_switch(mutation.pos_1);
-            nb_swi_++;
-            nb_mut_++;
-        }
-    }
-
-}
 
 /**
 Optimize promoters search
@@ -305,6 +292,13 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);
         }
+    }
+}
+
+void Organism::apply_mutations(DnaMutator* dna_mutator) {
+    auto& mutation_list = dna_mutator->mutation_list_;
+    for (auto mutation_pos: mutation_list) {
+        apply_mutation(mutation_pos.pos_1);
     }
 }
 

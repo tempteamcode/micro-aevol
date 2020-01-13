@@ -73,14 +73,14 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
  * @param genome : Genome to assign to the organism
  * @param indiv_id : Unique Identification Number
  */
-Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
+/*Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
 : exp_m_(exp_m)
 , rna_count_(0)
 , parent_length_(length)
-, dna_(genome, length)
+, dna_(length, genome)
 , indiv_id_(indiv_id)
 {
-}
+}*/
 
     Organism(ExpManager *exp_m, const Organism& clone);
 
@@ -142,7 +142,7 @@ Organism(ExpManager *exp_m, int length, char *genome, int indiv_id)
 
 //private:
 
-    bool do_switch(int pos);
+    void apply_mutation(int pos);
 
     void remove_all_promoters();
 
