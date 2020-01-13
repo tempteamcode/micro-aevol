@@ -180,6 +180,15 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
         return a;
         //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
     }
+
+    void start_stop_RNA();
+    void compute_RNA();
+    void opt_prom_compute_RNA();
+    void start_protein();
+    void compute_protein();
+    void translate_protein(double w_max);
+    void compute_phenotype();
+    void compute_fitness(double selection_pressure, double* target);
 };
 
 

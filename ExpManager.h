@@ -93,19 +93,6 @@ class ExpManager {
 
         void apply_mutation(int indiv_id);
 
-        void start_stop_RNA(int indiv_id);
-        void compute_RNA(int indiv_id);
-
-        void opt_prom_compute_RNA(int indiv_id);
-
-        void start_protein(int indiv_id);
-        void compute_protein(int indiv_id);
-
-        void translate_protein(int indiv_id, double w_max);
-
-        void compute_phenotype(int indiv_id);
-        void compute_fitness(int indiv_id, double selection_pressure);
-
         std::shared_ptr<Organism>* internal_organisms_;
         std::shared_ptr<Organism>* prev_internal_organisms_;
         std::shared_ptr<Organism> best_indiv;

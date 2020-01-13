@@ -31,10 +31,9 @@
 #include <vector>
 
 /**
- * Class to store a RNA and its related variable
+ * Struct to store a RNA and its related variable
  */
-class RNA {
-public:
+struct RNA {
     RNA () {};
     
     RNA (int t_begin, int t_end, double t_e, int t_length)

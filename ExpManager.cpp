@@ -125,25 +125,28 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     }
 
     // Generate a random organism that is better than nothing
-    double r_compare = 0;
+    for (;;) {
+        Organism* random_organism = new Organism(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna, 0);
+		Organism& indiv = *random_organism;
 
-    while (r_compare >= 0) {
-        auto random_organism = std::make_shared<Organism>(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna, 0);
-        internal_organisms_[0] = random_organism;
+        indiv.start_stop_RNA();
+        indiv.compute_RNA();
 
-        start_stop_RNA(0);
-        compute_RNA(0);
+        indiv.start_protein();
+        indiv.compute_protein();
 
-        start_protein(0);
-        compute_protein(0);
+        indiv.translate_protein(w_max);
 
-        translate_protein(0, w_max);
+        indiv.compute_phenotype();
 
-        compute_phenotype(0);
+        indiv.compute_fitness(selection_pressure, target);
 
-        compute_fitness(0, selection_pressure);
-
-        r_compare = round((random_organism->metaerror - geometric_area_) * 1E10) / 1E10;
+        double r_compare = round((indiv.metaerror - geometric_area_) * 1E10) / 1E10;
+        if (!(r_compare >= 0))
+        {
+            internal_organisms_[0] = std::shared_ptr<Organism>(random_organism);
+            break;
+        }
     }
 
     printf("Populating the environment\n");
@@ -323,7 +326,7 @@ void ExpManager::load(int t) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
                 std::make_shared<Organism>(exp_backup_file);
         // promoters have to be recomputed, they are not save in the backup
-        start_stop_RNA(indiv_id);
+        internal_organisms_[indiv_id]->start_stop_RNA();
     }
 
     rng_ = std::move(Threefry(grid_width_, grid_height_, exp_backup_file));
@@ -346,13 +349,11 @@ void ExpManager::prepare_mutation(int indiv_id) {
     dna_mutator_array_[indiv_id]->generate_mutations();
 
     if (dna_mutator_array_[indiv_id]->hasMutate()) {
-        internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(*(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()));
+        internal_organisms_[indiv_id] = std::make_shared<Organism>(*(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()));
 
         internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
         internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
         internal_organisms_[indiv_id]->parent_id_ = next_generation_reproducer_[indiv_id];
-
     } else {
         int parent_id = next_generation_reproducer_[indiv_id];
 
@@ -400,13 +401,14 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
         prepare_mutation(indiv_id);
 
         if (dna_mutator_array_[indiv_id]->hasMutate()) {
+            Organism& indiv = (*internal_organisms_[indiv_id].get());
             apply_mutation(indiv_id);
-            opt_prom_compute_RNA(indiv_id);
-            start_protein(indiv_id);
-            compute_protein(indiv_id);
-            translate_protein(indiv_id, w_max);
-            compute_phenotype(indiv_id);
-            compute_fitness(indiv_id, selection_pressure);
+            indiv.opt_prom_compute_RNA();
+            indiv.start_protein();
+            indiv.compute_protein();
+            indiv.translate_protein(w_max);
+            indiv.compute_phenotype();
+            indiv.compute_fitness(selection_pressure, target);
         }
     }
 
@@ -450,608 +452,6 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     stats_mean.write_average();
 }
 
-
-/**
- * Search for Promoters and Terminators (i.e. beginning and ending of a RNA) within the whole DNA of an Organism
- *
- * @param indiv_id : Unique identification number of the organism
- */
-void ExpManager::start_stop_RNA(int indiv_id) {
-    Organism& indiv = *(internal_organisms_[indiv_id].get());
-    if (indiv.length() >= PROM_SIZE) {
-	    for (int dna_pos = 0; dna_pos < indiv.length(); dna_pos++) {
-            int dist_lead = indiv.dna_.promoter_at(dna_pos);
-
-            if (dist_lead <= 4) {
-                indiv.add_new_promoter(dna_pos, dist_lead);
-            }
-
-            // Computing if a terminator exists at that position
-            int dist_term_lead = indiv.dna_.terminator_at(dna_pos);
-
-            if (dist_term_lead == 4) {
-                indiv.terminators.insert(dna_pos);
-	        }
-        }
-    }
-}
-
-/**
- * Optimize version that do not need to search the whole Dna for promoters
- */
-void ExpManager::opt_prom_compute_RNA(int indiv_id) {
-    Organism& organism = *(internal_organisms_[indiv_id].get());
-    
-    organism.proteins.clear();
-    organism.rnas.clear();
-    organism.terminators.clear();
-
-    organism.rnas.reserve(organism.promoters_.size());
-
-    for (const auto &prom_pair: organism.promoters_) {
-        int prom_pos = prom_pair.first;
-
-        /* Search for terminators */
-        int cur_pos = prom_pos + 22;
-        cur_pos = cur_pos >= internal_organisms_[indiv_id]->length()
-                  ? cur_pos - internal_organisms_[indiv_id]->length()
-                  : cur_pos;
-
-        int start_pos = cur_pos;
-
-        bool terminator_found = false;
-
-        while (!terminator_found) {
-            int term_dist_leading = organism.dna_.terminator_at(cur_pos);
-
-            if (term_dist_leading == 4)
-                terminator_found = true;
-            else {
-                cur_pos = cur_pos + 1 >= organism.length()
-                          ? cur_pos + 1 - organism.length()
-                          : cur_pos + 1;
-
-                if (cur_pos == start_pos) {
-                    break;
-                }
-            }
-        }
-
-        if (terminator_found) {
-            int32_t rna_end = cur_pos + 10 >= organism.length()
-                              ? cur_pos + 10 - organism.length()
-                              : cur_pos + 10;
-
-            int32_t rna_length = 0;
-
-            if (prom_pos > rna_end)
-                rna_length = organism.length() - prom_pos + rna_end;
-            else
-                rna_length = rna_end - prom_pos;
-
-            rna_length -= 21;
-
-            if (rna_length > 0) {
-                int glob_rna_idx = organism.rna_count_;
-                organism.rna_count_++;
-
-                organism.rnas.emplace_back(
-                        prom_pos,
-                        rna_end,
-                        1.0 - std::fabs(
-                                ((float) prom_pair.second.error)) / 5.0,
-                        rna_length);
-            }
-        }
-    }
-}
-
-
-/**
- * Create the list of RNAs based on the found promoters and terminators on the DNA of an Organism
- *
- * @param indiv_id : Unique identification number of the organism
- */
-void ExpManager::compute_RNA(int indiv_id) {
-    if (internal_organisms_[indiv_id]->terminators.empty())
-        return;
-
-    internal_organisms_[indiv_id]->rnas.resize(internal_organisms_[indiv_id]->promoters_.size());
-
-    for (const auto &prom_pair: internal_organisms_[indiv_id]->promoters_) {
-        int prom_pos = prom_pair.first;
-        int k = prom_pos + 22;
-
-        k = k >= internal_organisms_[indiv_id]->length()
-            ? k - internal_organisms_[indiv_id]->length()
-            : k;
-
-        auto it_rna_end = internal_organisms_[indiv_id]->terminators.lower_bound(k);
-
-        if (it_rna_end == internal_organisms_[indiv_id]->terminators.end()) {
-            it_rna_end = internal_organisms_[indiv_id]->terminators.begin();
-        }
-
-        int rna_end = *it_rna_end + 10 >= internal_organisms_[indiv_id]->length()
-                      ? *it_rna_end + 10 - internal_organisms_[indiv_id]->length()
-                      : *it_rna_end + 10;
-
-        int rna_length = 0;
-
-        if (prom_pos > rna_end)
-            rna_length = internal_organisms_[indiv_id]->length() - prom_pos + rna_end;
-        else
-            rna_length = rna_end - prom_pos;
-
-        rna_length -= 21;
-
-        if (rna_length >= 0) {
-            int glob_rna_idx = internal_organisms_[indiv_id]->rna_count_;
-            internal_organisms_[indiv_id]->rna_count_ =
-                    internal_organisms_[indiv_id]->rna_count_ + 1;
-
-            internal_organisms_[indiv_id]->rnas[glob_rna_idx] =
-                    RNA(prom_pos,
-                            rna_end,
-                            1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
-                            rna_length);
-        }
-    }
-}
-
-/**
- * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
- *
- * @param indiv_id : Unique identification number of the organism
- */
-void ExpManager::start_protein(int indiv_id) {
-    for (int rna_idx = 0; rna_idx < internal_organisms_[indiv_id]->rna_count_; rna_idx++) {
-        int c_pos = internal_organisms_[indiv_id]->rnas[rna_idx].begin;
-
-        if (internal_organisms_[indiv_id]->rnas[rna_idx].length >= 22) {
-            c_pos += 22;
-            c_pos = c_pos >= internal_organisms_[indiv_id]->length()
-                    ? c_pos - internal_organisms_[indiv_id]->length()
-                    : c_pos;
-
-            while (c_pos != internal_organisms_[indiv_id]->rnas[rna_idx].end) {
-
-                if (internal_organisms_[indiv_id]->dna_.shine_dal_start(c_pos)) {
-                    internal_organisms_[indiv_id]->rnas[rna_idx].start_prot.push_back(c_pos);
-                }
-
-                c_pos++;
-                c_pos = c_pos >= internal_organisms_[indiv_id]->length()
-                        ? c_pos - internal_organisms_[indiv_id]->length()
-                        : c_pos;
-            }
-        }
-    }
-}
-
-/**
- * Compute the list of genes/proteins of an Organism
- *
- * @param indiv_id : Unique identification number of the organism
- */
-void ExpManager::compute_protein(int indiv_id) {
-    Organism& organism = *(internal_organisms_[indiv_id].get());
-
-    int resize_to = 0;
-
-    for (int rna_idx = 0; rna_idx < organism.rna_count_; rna_idx++) {
-        resize_to += organism.rnas[rna_idx].start_prot.size();
-    }
-
-    organism.proteins.clear();
-    organism.proteins.reserve(resize_to);
-
-    for (int rna_idx = 0; rna_idx < organism.rna_count_; rna_idx++) {
-        for (int protein_idx = 0;
-             protein_idx < organism.rnas[rna_idx].start_prot.size();
-             protein_idx++) {
-
-            int protein_start = organism.rnas[rna_idx].start_prot[protein_idx];
-            int current_position = protein_start + 13;
-
-            current_position = current_position >= organism.length()
-                               ? current_position - organism.length()
-                               : current_position;
-
-            int transcribed_start = organism.rnas[rna_idx].begin + 22;
-            transcribed_start = transcribed_start >= organism.length()
-                                ? transcribed_start - organism.length()
-                                : transcribed_start;
-
-            int transcription_length;
-            if (transcribed_start <= protein_start) {
-                transcription_length = protein_start - transcribed_start;
-            } else {
-                transcription_length = organism.length() - transcribed_start + protein_start;
-            }
-            transcription_length += 13;
-
-
-            while (organism.rnas[rna_idx].length - transcription_length >= 3) {
-                if (organism.dna_.protein_stop(current_position)) {
-                    int prot_length;
-
-                    int protein_end = current_position + 2 >= organism.length() ?
-                                      current_position - organism.length() + 2 :
-                                      current_position + 2;
-
-                    if (protein_start + 13 < protein_end) {
-                        prot_length = protein_end - (protein_start + 13);
-                    } else {
-                        prot_length = organism.length() - (protein_start + 13) + protein_end;
-                    }
-
-                    if (prot_length >= 3) {
-                        int glob_prot_idx = organism.protein_count_;
-                        organism.protein_count_ += 1;
-
-                        organism.proteins.emplace_back
-                                           (protein_start,
-                                            protein_end,
-                                            prot_length,
-                                            internal_organisms_[indiv_id]->rnas[rna_idx].e);
-
-                        organism.rnas[rna_idx].is_coding_ = true;
-                    }
-                    break;
-                }
-
-                current_position += 3;
-                current_position = current_position >= organism.length()
-                                   ? current_position - organism.length()
-                                   : current_position;
-                transcription_length += 3;
-            }
-        }
-    }
-}
-
-/**
- * Compute the pseudo-chimical model (i.e. the width, height and location in the phenotypic space) of a genes/protein
- *
- * @param indiv_id : Unique identification number of the organism
- * @param w_max : Maximum width of the triangle generated by a Protein
- */
-void ExpManager::translate_protein(int indiv_id, double w_max) {
-    Organism& organism = *(internal_organisms_[indiv_id].get());
-
-    for (int protein_idx = 0; protein_idx < organism.protein_count_; protein_idx++) {
-        Protein& protein = organism.proteins[protein_idx];
-
-        if (protein.is_init_) {
-            int c_pos = protein.protein_start;
-            c_pos += 13;
-            c_pos = c_pos >= organism.length()
-                    ? c_pos - organism.length()
-                    : c_pos;
-
-            int codon_list[64] = {};
-            int codon_idx = 0;
-            int count_loop = 0;
-
-            //printf("Codon list : ");
-            while (count_loop < protein.protein_length / 3 &&
-                   codon_idx < 64) {
-                codon_list[codon_idx] = organism.dna_.codon_at(c_pos);
-                //printf("%d ",codon_list[codon_idx]);
-                codon_idx++;
-
-                count_loop++;
-                c_pos += 3;
-                c_pos = c_pos >= organism.length()
-                        ? c_pos - organism.length()
-                        : c_pos;
-            }
-            //printf("\n");
-
-            double M = 0.0;
-            double W = 0.0;
-            double H = 0.0;
-
-            int nb_m = 0;
-            int nb_w = 0;
-            int nb_h = 0;
-
-            bool bin_m = false; // Initializing to false will yield a conservation of the high weight bit
-            bool bin_w = false; // when applying the XOR operator for the Gray to standard conversion
-            bool bin_h = false;
-
-
-            for (int i = 0; i < codon_idx; i++) {
-                switch (codon_list[i]) {
-                    case CODON_M0 : {
-                        // M codon found
-                        nb_m++;
-
-                        // Convert Gray code to "standard" binary code
-                        bin_m ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
-
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ M <<= 1;
-                        M *= 2;
-
-                        // Add this nucleotide's contribution to M
-                        if (bin_m) M += 1;
-
-                        break;
-                    }
-                    case CODON_M1 : {
-                        // M codon found
-                        nb_m++;
-
-                        // Convert Gray code to "standard" binary code
-                        bin_m ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
-
-                        // A lower-than-the-previous-lowest bit was found, make a left bitwise shift
-                        //~ M <<= 1;
-                        M *= 2;
-
-                        // Add this nucleotide's contribution to M
-                        if (bin_m) M += 1;
-
-                        break;
-                    }
-                    case CODON_W0 : {
-                        // W codon found
-                        nb_w++;
-
-                        // Convert Gray code to "standard" binary code
-                        bin_w ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
-
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ W <<= 1;
-                        W *= 2;
-
-                        // Add this nucleotide's contribution to W
-                        if (bin_w) W += 1;
-
-                        break;
-                    }
-                    case CODON_W1 : {
-                        // W codon found
-                        nb_w++;
-
-                        // Convert Gray code to "standard" binary code
-                        bin_w ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
-
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ W <<= 1;
-                        W *= 2;
-
-                        // Add this nucleotide's contribution to W
-                        if (bin_w) W += 1;
-
-                        break;
-                    }
-                    case CODON_H0 :
-                    case CODON_START : // Start codon codes for the same amino-acid as H0 codon
-                    {
-                        // H codon found
-                        nb_h++;
-
-                        // Convert Gray code to "standard" binary code
-                        bin_h ^= false; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
-
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ H <<= 1;
-                        H *= 2;
-
-                        // Add this nucleotide's contribution to H
-                        if (bin_h) H += 1;
-
-                        break;
-                    }
-                    case CODON_H1 : {
-                        // H codon found
-                        nb_h++;
-
-                        // Convert Gray code to "standard" binary code
-                        bin_h ^= true; // as bin_m was initialized to false, the XOR will have no effect on the high weight bit
-
-                        // A lower-than-the-previous-lowest weight bit was found, make a left bitwise shift
-                        //~ H <<= 1;
-                        H *= 2;
-
-                        // Add this nucleotide's contribution to H
-                        if (bin_h) H += 1;
-
-                        break;
-                    }
-                }
-            }
-
-            protein.protein_length = codon_idx;
-
-
-            //  ----------------------------------------------------------------------------------
-            //  2) Normalize M, W and H values in [0;1] according to number of codons of each kind
-            //  ----------------------------------------------------------------------------------
-            protein.m =
-                    nb_m != 0 ? M / (pow(2, nb_m) - 1) : 0.5;
-            protein.w =
-                    nb_w != 0 ? W / (pow(2, nb_w) - 1) : 0.0;
-            protein.h =
-                    nb_h != 0 ? H / (pow(2, nb_h) - 1) : 0.5;
-
-            //  ------------------------------------------------------------------------------------
-            //  3) Normalize M, W and H values according to the allowed ranges (defined in macros.h)
-            //  ------------------------------------------------------------------------------------
-            // x_min <= M <= x_max
-            // w_min <= W <= w_max
-            // h_min <= H <= h_max
-            protein.m =
-                    (X_MAX - X_MIN) *
-                    protein.m +
-                    X_MIN;
-            protein.w =
-                    (w_max - W_MIN) *
-                    protein.w +
-                    W_MIN;
-            protein.h =
-                    (H_MAX - H_MIN) *
-                    protein.h +
-                    H_MIN;
-
-            if (nb_m == 0 || nb_w == 0 || nb_h == 0 ||
-                protein.w == 0.0 ||
-                protein.h == 0.0) {
-                protein.is_functional = false;
-            } else {
-                protein.is_functional = true;
-            }
-        }
-    }
-
-
-    std::map<int, Protein *> lookup;
-
-    for (int protein_idx = 0; protein_idx < organism.protein_count_; protein_idx++) {
-        Protein& protein = organism.proteins[protein_idx];
-
-        if (protein.is_init_) {
-            if (lookup.find(protein.protein_start) == lookup.end()) {
-                lookup[protein.protein_start] = &protein;
-            } else {
-                lookup[protein.protein_start]->e +=
-                        protein.e;
-                protein.is_init_ = false;
-            }
-        }
-
-    }
-}
-
-/**
- * From the list of proteins, build the phenotype of an organism
- *
- * @param indiv_id : Unique identification number of the organism
- */
-void ExpManager::compute_phenotype(int indiv_id) {
-    Organism& organism = *(internal_organisms_[indiv_id].get());
-
-    double activ_phenotype[300]{};
-    double inhib_phenotype[300]{};
-
-    for (int protein_idx = 0; protein_idx < organism.protein_count_; protein_idx++) {
-        Protein& protein = organism.proteins[protein_idx];
-
-        if (protein.is_init_ &&
-            fabs(protein.w) >= 1e-15 &&
-            fabs(protein.h) >= 1e-15 &&
-            protein.is_functional) {
-            // Compute triangle points' coordinates
-            double x0 =
-                    protein.m -
-                    protein.w;
-
-            double x1 = protein.m;
-            double x2 =
-                    protein.m +
-                    protein.w;
-
-            int ix0 = (int) (x0 * 300);
-            int ix1 = (int) (x1 * 300);
-            int ix2 = (int) (x2 * 300);
-
-            if (ix0 < 0) ix0 = 0; else if (ix0 > (299)) ix0 = 299;
-            if (ix1 < 0) ix1 = 0; else if (ix1 > (299)) ix1 = 299;
-            if (ix2 < 0) ix2 = 0; else if (ix2 > (299)) ix2 = 299;
-
-            // Compute the first equation of the triangle
-            double incY =
-                    (protein.h *
-                     protein.e) /
-                    (ix1 - ix0);
-            int count = 1;
-
-            // Updating value between x0 and x1
-            for (int i = ix0 + 1; i < ix1; i++) {
-                if (protein.h > 0)
-                    activ_phenotype[i] += (incY * (count++));
-                else
-                    inhib_phenotype[i] += (incY * (count++));
-            }
-
-
-            if (protein.h > 0)
-                activ_phenotype[ix1] += (protein.h *
-                                         protein.e);
-            else
-                inhib_phenotype[ix1] += (protein.h *
-                                         protein.e);
-
-
-            // Compute the second equation of the triangle
-            incY = (protein.h *
-                    protein.e) /
-                   (ix2 - ix1);
-            count = 1;
-
-            // Updating value between x1 and x2
-            for (int i = ix1 + 1; i < ix2; i++) {
-                if (protein.h > 0)
-                    activ_phenotype[i] += ((protein.h *
-                                            protein.e) -
-                                           (incY * (count++)));
-                else
-                    inhib_phenotype[i] += ((protein.h *
-                                            protein.e) -
-                                           (incY * (count++)));
-            }
-        }
-    }
-
-
-    for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
-        if (activ_phenotype[fuzzy_idx] > 1)
-            activ_phenotype[fuzzy_idx] = 1;
-        if (inhib_phenotype[fuzzy_idx] < -1)
-            inhib_phenotype[fuzzy_idx] = -1;
-    }
-
-    for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
-        organism.phenotype[fuzzy_idx] = activ_phenotype[fuzzy_idx] + inhib_phenotype[fuzzy_idx];
-        if (organism.phenotype[fuzzy_idx] < 0)
-            organism.phenotype[fuzzy_idx] = 0;
-    }
-}
-
-/**
- * From the phenotype of an organism, compute its metabolic error and fitness
- *
- * @param indiv_id : Unique identification number of the organism
- * @param selection_pressure : Selection pressure used during the selection process
- */
-void ExpManager::compute_fitness(int indiv_id, double selection_pressure) {
-    Organism& organism = *(internal_organisms_[indiv_id].get());
-
-    for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
-        if (organism.phenotype[fuzzy_idx] > 1)
-            organism.phenotype[fuzzy_idx] = 1;
-        if (organism.phenotype[fuzzy_idx] < 0)
-            organism.phenotype[fuzzy_idx] = 0;
-
-        organism.delta[fuzzy_idx] = organism.phenotype[fuzzy_idx] -
-                                                          target[fuzzy_idx];
-    }
-
-    organism.metaerror = 0;
-
-    for (int fuzzy_idx = 0; fuzzy_idx < 299; fuzzy_idx++) {
-        organism.metaerror +=
-                ((std::fabs(organism.delta[fuzzy_idx]) +
-                  std::fabs(organism.delta[fuzzy_idx + 1])) /
-                 (600.0));
-    }
-
-    organism.fitness =
-            exp(-selection_pressure * ((double) organism.metaerror));
-}
 
 /**
  * Selection process: for a given cell in the grid of the population, compute which organism win the computation
@@ -1106,19 +506,21 @@ void ExpManager::selection(int indiv_id) {
  */
 void ExpManager::run_evolution(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+        Organism& indiv = (*internal_organisms_[indiv_id].get());
+        
         // dna_mutator_array_ is set only to have has_mutate() true so that RNA, protein and phenotype will be computed
         dna_mutator_array_[indiv_id] = nullptr;
 
-        opt_prom_compute_RNA(indiv_id);
+        indiv.opt_prom_compute_RNA();
 
-        start_protein(indiv_id);
-        compute_protein(indiv_id);
+        indiv.start_protein();
+        indiv.compute_protein();
 
-        translate_protein(indiv_id, w_max_);
+        indiv.translate_protein(w_max_);
 
-        compute_phenotype(indiv_id);
+        indiv.compute_phenotype();
 
-        compute_fitness(indiv_id, selection_pressure_);
+        indiv.compute_fitness(selection_pressure_, target);
     }
 
     printf("Running evolution from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
@@ -1155,22 +557,25 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
   cout << "Transfer done in " << duration_transfer_in << endl;
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+        Organism& indiv = (*internal_organisms_[indiv_id].get());
+
         delete dna_mutator_array_[indiv_id];
         dna_mutator_array_[indiv_id] = new DnaMutator(
                 std::move(rng_.gen(indiv_id, Threefry::MUTATION)),
                 prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
                 mutation_rate_, indiv_id);
-        opt_prom_compute_RNA(indiv_id);
-        //compute_RNA(indiv_id);
 
-        start_protein(indiv_id);
-        compute_protein(indiv_id);
+        indiv.opt_prom_compute_RNA();
+        //indiv.compute_RNA();
 
-        translate_protein(indiv_id, w_max_);
+        indiv.start_protein();
+        indiv.compute_protein();
 
-        compute_phenotype(indiv_id);
+        indiv.translate_protein(w_max_);
 
-        compute_fitness(indiv_id, selection_pressure_);
+        indiv.compute_phenotype();
+
+        indiv.compute_fitness(selection_pressure_, target);
     }
 
   printf("Running evolution GPU from %d to %d\n",AeTime::time(),AeTime::time()+nb_gen);
