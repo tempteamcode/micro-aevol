@@ -1,17 +1,31 @@
 #include <vector>
 #include <utility>
 #include <cstring> // std::memcpy
+
+
 #include <cstdint>
 
-#define R2(n)     n,     n + 2*64,     n + 1*64,     n + 3*64
+#define R2(n)    n,     n + 2*64,     n + 1*64,     n + 3*64
 #define R4(n) R2(n), R2(n + 2*16), R2(n + 1*16), R2(n + 3*16)
 #define R6(n) R4(n), R4(n + 2*4 ), R4(n + 1*4 ), R4(n + 3*4 )
 
-typedef uint32_t int_t;
+const uint32_t lookuptable[256] = { R6(0), R6(2), R6(1), R6(3) };
 
-const int_t lookuptable[256] = { R6(0), R6(2), R6(1), R6(3) };
+const uint32_t MASKS[21] = {1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535,131071,262143,524287,1048575,2097151};
 
-const int_t MASKS[21] = {1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535,131071,262143,524287,1048575,2097151};
+inline uint32_t reverse_int(int len, uint32_t val)
+{
+  return (lookuptable[(val      ) & 0xff] << 24 |
+          lookuptable[(val >>  8) & 0xff] << 16 |
+          lookuptable[(val >> 16) & 0xff] <<  8 |
+          lookuptable[(val >> 24) & 0xff]
+         ) >> (sizeof(uint32_t)*8 - len);
+}
+
+inline uint32_t count_nb_ones(uint32_t n) {
+  return __builtin_popcount(n);
+}
+
 
 template <typename item_t>
 class uninitialized_vector
@@ -130,6 +144,7 @@ private:
 class own_dynamic_bitset
 {
 public:
+  typedef uint32_t int_t;
   typedef uninitialized_vector<int_t> vec_t;
   
   static constexpr size_t sizeof_int = sizeof(int_t) * 8;
@@ -194,16 +209,16 @@ public:
 
   inline void set(size_t pos)
   {
-      size_t index = (pos / sizeof_int);
-      int subindex = pos % sizeof_int;
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
     int_t mask = 1 << subindex;
     
     data[index] |= mask;
   }
   inline void set(size_t pos, bool value)
   {
-      size_t index = (pos / sizeof_int);
-      int subindex = pos % sizeof_int;
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
     int_t mask = 1 << subindex;
 
     if (value) data[index] |= mask;
@@ -211,16 +226,16 @@ public:
   }
   inline void reset(size_t pos)
   {
-      size_t index = (pos / sizeof_int);
-      int subindex = pos % sizeof_int;
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
     int_t mask = 1 << subindex;
     
     data[index] &= ~mask;
   }
   inline void flip(size_t pos)
   {
-      size_t index = pos / sizeof_int;
-      int subindex = pos % sizeof_int;
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
     int_t mask = 1 << subindex;
     
     data[index] ^= mask;
@@ -260,79 +275,8 @@ public:
     return result;
   }
 
-  bool search(int pos, int len, int_t toSearch){
-      if(pos >= used)
-          pos = pos - used;
-
-      size_t index = (pos / sizeof_int);
-      int subindex = pos % sizeof_int;
-
-      int_t toSearchRev = (lookuptable[ toSearch & 0xff ]<<24 |
-                                 lookuptable[ (toSearch >> 8) & 0xff ]<<16 |
-                                 lookuptable[ (toSearch >> 16 )& 0xff ]<< 8 |
-                                 lookuptable[ (toSearch >>24 ) & 0xff ])
-                                         >> (sizeof_int-len);
-
-      if(subindex + len <= sizeof_int && pos+len <= used){
-          int_t mask = MASKS[len-1];
-
-          mask = mask << subindex;
-
-          return ((mask&data[index])>>subindex) == toSearchRev;
-
-      }else if(subindex + len > sizeof_int && pos+len > used) {
-          int len1 = sizeof_int - subindex;
-          int len2 = used - (index+1)*sizeof_int;
-          int len3 = len - len1 - len2;
-
-          int_t mask1 = MASKS[len1-1];
-
-          mask1 = mask1 << subindex;
-
-          int_t res = (mask1&data[index])>>(subindex);
-
-          int_t mask2 = MASKS[len2-1];
-
-          res |= (mask2&data[index+1])<<len1;
-
-          int_t mask3 = MASKS[len3-1];
-
-          res |= (mask3&data[0])<<(len1+len2);
-
-          return res == toSearchRev;
-      }else{
-          int size_left;
-
-          if(pos+len <= used)
-              size_left = sizeof_int-subindex;
-          else
-              size_left = used - index*sizeof_int - subindex;
-
-          int len1 = size_left;
-          int len2 = len - len1;
-
-          int_t mask1 = MASKS[len1-1];
-
-          mask1 = mask1 << subindex;
-
-          int_t res = (mask1&data[index])>>(subindex);
-
-          int_t mask2 = MASKS[len2-1];
-
-          int newIndex = index+1;
-          if(pos+len > used)
-              newIndex = 0;
-
-          res |= (mask2&data[newIndex])<<len1;
-
-          return res == toSearchRev;
-      }
-  }
-
-  int_t getSequence(int pos, int len){
-      if(pos >= used)
-          pos = pos - used;
-
+  int_t getSequenceRev(int pos, int len) {
+      if (pos >= used) pos -= used;
       size_t index = (pos/ sizeof_int);
       int subindex = pos % sizeof_int;
 
@@ -389,88 +333,31 @@ public:
           res |= (mask2&data[newIndex])<<len1;
       }
 
-      return (lookuptable[ res & 0xff ]<<24 |
-              lookuptable[ (res >> 8) & 0xff ]<<16 |
-              lookuptable[ (res >> 16 )& 0xff ]<< 8 |
-              lookuptable[ (res >>24 ) & 0xff ])
-              >> (sizeof_int-len);
+      return res;
   }
 
-  int_t getHammingDistance(int pos, int len, int_t toSearch){
-      if(pos >= used)
-          pos = pos - used;
-
-      size_t index = (pos / sizeof_int);
-      int subindex = pos % sizeof_int;
-
-      int_t toSearchRev = (lookuptable[ toSearch & 0xff ]<<24 |
-                                  lookuptable[ (toSearch >> 8) & 0xff ]<<16 |
-                                  lookuptable[ (toSearch >> 16 )& 0xff ]<< 8 |
-                                  lookuptable[ (toSearch >>24 ) & 0xff ])
-              >> (sizeof_int-len);
-
-      if(subindex + len <= sizeof_int && pos+len <= used){
-          int_t mask = MASKS[len-1];
-
-          mask = mask << subindex;
-
-          return count_nb_ones(((mask&data[index])>>subindex)^toSearchRev);
-
-      }else if(subindex + len > sizeof_int && pos+len > used) {
-          int len1 = sizeof_int - subindex;
-          int len2 = used - (index+1)*sizeof_int;
-          int len3 = len - len1 - len2;
-
-          int_t mask1 = MASKS[len1-1];
-
-          mask1 = mask1 << subindex;
-
-          int_t res = (mask1&data[index])>>(subindex);
-
-          int_t mask2 = MASKS[len2-1];
-
-          res |= (mask2&data[index+1])<<len1;
-
-          int_t mask3 = MASKS[len3-1];
-
-          res |= (mask3&data[0])<<(len1+len2);
-
-          return count_nb_ones(res^toSearchRev);
-      }else{
-          int size_left;
-
-          if(pos+len <= used)
-              size_left = sizeof_int-subindex;
-          else
-              size_left = used - index*sizeof_int - subindex;
-
-          int len1 = size_left;
-          int len2 = len - len1;
-
-          int_t mask1 = MASKS[len1-1];
-
-          mask1 = mask1 << subindex;
-
-          int_t res = (mask1&data[index])>>(subindex);
-
-          int_t mask2 = MASKS[len2-1];
-
-          int newIndex = index+1;
-          if(pos+len > used)
-              newIndex = 0;
-
-          res |= (mask2&data[newIndex])<<len1;
-
-          return count_nb_ones(res^toSearchRev);
-      }
+  inline int_t getSequence(int pos, int len) {
+    return reverse_int(len, getSequenceRev(pos, len));
   }
-  
+
+  inline bool searchRev(int pos, int len, int_t toSearchRev) {
+    return getSequenceRev(pos, len) == toSearchRev;
+  }
+
+  inline bool search(int pos, int len, int_t toSearch) {
+    return searchRev(pos, len, reverse_int(len, toSearch));
+  }
+
+  inline int getHammingDistanceRev(int pos, int len, int_t toSearchRev) {
+    return count_nb_ones(getSequenceRev(pos, len) ^ toSearchRev);
+  }
+
+  inline int getHammingDistance(int pos, int len, int_t toSearch) {
+    return getHammingDistanceRev(pos, len, reverse_int(len, toSearch));
+  }
+
 private:
   size_t used;
   vec_t data;
-
-  int count_nb_ones(int_t n){
-      return __builtin_popcount(n);
-  }
 };
 
