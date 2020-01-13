@@ -65,7 +65,7 @@ using namespace std;
  */
 ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutation_rate, int init_length_dna,
                        double w_max, int selection_pressure, int backup_step)
-: rng_(new Threefry(grid_width, grid_height, seed))
+: rng_(grid_width, grid_height, seed)
 {
     // Initializing the data structure
     grid_height_ = grid_height;
@@ -128,7 +128,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     double r_compare = 0;
 
     while (r_compare >= 0) {
-        auto random_organism = std::make_shared<Organism>(std::move(rng_->gen(0, Threefry::MUTATION)), init_length_dna, 0);
+        auto random_organism = std::make_shared<Organism>(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna, 0);
         internal_organisms_[0] = random_organism;
 
         start_stop_RNA(0);
@@ -144,7 +144,6 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         compute_fitness(0, selection_pressure);
 
         r_compare = round((random_organism->metaerror - geometric_area_) * 1E10) / 1E10;
-
     }
 
     printf("Populating the environment\n");
@@ -184,7 +183,6 @@ ExpManager::ExpManager(int time)
     for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
         dna_mutator_array_[indiv_id] = nullptr;
     }
-
 }
 
 /**
@@ -210,7 +208,6 @@ void ExpManager::create_directory() {
  * @param t : simulated time of the checkpoint
  */
 void ExpManager::save(int t) const {
-
     char exp_backup_file_name[255];
 
     sprintf(exp_backup_file_name, "backup/backup_%d.zae", t);
@@ -257,7 +254,7 @@ void ExpManager::save(int t) const {
         prev_internal_organisms_[indiv_id]->save(exp_backup_file);
     }
 
-    rng_->save(exp_backup_file);
+    rng_.save(exp_backup_file);
 
     if (gzclose(exp_backup_file) != Z_OK) {
         cerr << "Error while closing backup file" << endl;
@@ -270,7 +267,6 @@ void ExpManager::save(int t) const {
  * @param t : resuming the simulation at this generation
  */
 void ExpManager::load(int t) {
-
     char exp_backup_file_name[255];
 
     sprintf(exp_backup_file_name, "backup/backup_%d.zae", t);
@@ -330,7 +326,7 @@ void ExpManager::load(int t) {
         start_stop_RNA(indiv_id);
     }
 
-    rng_ = std::move(std::make_unique<Threefry>(grid_width_, grid_height_, exp_backup_file));
+    rng_ = std::move(Threefry(grid_width_, grid_height_, exp_backup_file));
 
     if (gzclose(exp_backup_file) != Z_OK) {
         cerr << "Error while closing backup file" << endl;
@@ -344,7 +340,7 @@ void ExpManager::load(int t) {
  */
 void ExpManager::prepare_mutation(int indiv_id) {
     dna_mutator_array_[indiv_id] = new DnaMutator(
-            std::move(Threefry::Gen(std::move(rng_->gen(indiv_id, Threefry::MUTATION)))),
+            std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
             prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
             mutation_rate_, indiv_id);
     dna_mutator_array_[indiv_id]->generate_mutations();
@@ -1093,7 +1089,7 @@ void ExpManager::selection(int indiv_id) {
         probs[i] = local_fit_array[i] / sum_local_fit;
     }
 
-    auto rng = std::move(rng_->gen(indiv_id, Threefry::REPROD));
+    auto rng = std::move(rng_.gen(indiv_id, Threefry::REPROD));
     int found_org = rng.roulette_random(probs, neighborhood_size);
 
     int x_offset = (found_org / selection_scope_x) - 1;
@@ -1161,7 +1157,7 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         delete dna_mutator_array_[indiv_id];
         dna_mutator_array_[indiv_id] = new DnaMutator(
-                std::move(rng_->gen(indiv_id, Threefry::MUTATION)),
+                std::move(rng_.gen(indiv_id, Threefry::MUTATION)),
                 prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
                 mutation_rate_, indiv_id);
         opt_prom_compute_RNA(indiv_id);

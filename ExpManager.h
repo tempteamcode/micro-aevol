@@ -117,7 +117,7 @@ private:
 public: // used in Algorithms.cu
         int nb_indivs_;
 
-        std::unique_ptr<Threefry> rng_;
+        Threefry rng_;
 
 private:
         double geometric_area_;

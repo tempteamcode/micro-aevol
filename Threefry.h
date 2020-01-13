@@ -18,15 +18,16 @@ private:
 	int X_, Y_, N_;
 	Threefry123::key_type seed_;
 
-	public:
+public:
 
 	enum Phase {REPROD = 0, MUTATION = 1, NPHASES};
 
-		Threefry(int X, int Y, unsigned int seed) : counters_(X*Y*NPHASES, 0), X_(X), Y_(Y), N_(X*Y) {
-			seed_[0] = 0;
-			seed_[1] = seed;
-		}
-		Threefry(int X, int Y, gzFile backup_file);
+    Threefry() = default;
+	Threefry(int X, int Y, unsigned int seed) : counters_(X*Y*NPHASES, 0), X_(X), Y_(Y), N_(X*Y) {
+		seed_[0] = 0;
+		seed_[1] = seed;
+	}
+	Threefry(int X, int Y, gzFile backup_file);
 
 	std::vector<unsigned long long>& counters() { return counters_; }
 

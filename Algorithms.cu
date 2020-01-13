@@ -37,7 +37,7 @@ cudaError_t checkCuda(cudaError_t result)
 // constexpr int32_t PROMOTER_ARRAY_SIZE = 10000;
 
 void transfer_in(ExpManager* exp_m, bool first_gen) {
-    exp_m->rng_->initDevice();
+    exp_m->rng_.initDevice();
 
   std::vector<size_t> host_dna_size(exp_m->nb_indivs_);
   std::vector<size_t> host_dna_offset(exp_m->nb_indivs_);
@@ -227,14 +227,14 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
                        exp_m->nb_indivs_ * sizeof(double)));
 
 
-  //printf("GPU Counter %d\n",exp_m->rng_->counters().size());
+  //printf("GPU Counter %d\n",exp_m->rng_.counters().size());
 
   checkCuda(cudaMalloc((void**) &gpu_counters,
-                       exp_m->rng_->counters().size() *
+                       exp_m->rng_.counters().size() *
                        sizeof(unsigned long long)));
 
-  checkCuda(cudaMemcpy(gpu_counters, exp_m->rng_->counters().data(),
-                       exp_m->rng_->counters().size() *
+  checkCuda(cudaMemcpy(gpu_counters, exp_m->rng_.counters().data(),
+                       exp_m->rng_.counters().size() *
                        sizeof(unsigned long long), cudaMemcpyHostToDevice));
 
 }
