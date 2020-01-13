@@ -65,7 +65,8 @@ using namespace std;
  */
 ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutation_rate, int init_length_dna,
                        double w_max, int selection_pressure, int backup_step)
-        : rng_(new Threefry(grid_width, grid_height, seed)) {
+: rng_(new Threefry(grid_width, grid_height, seed))
+{
     // Initializing the data structure
     grid_height_ = grid_height;
     grid_width_ = grid_width;
@@ -166,7 +167,8 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
  *
  * @param time : resume from this generation
  */
-ExpManager::ExpManager(int time) {
+ExpManager::ExpManager(int time)
+{
     target = new double[300];
 
     load(time);
@@ -189,8 +191,6 @@ ExpManager::ExpManager(int time) {
  * Create stats and backup directory
  */
 void ExpManager::create_directory() {
-
-
     // Backup
     int status = mkdir("backup", 0755);
     if (status == -1 && errno != EEXIST) {
@@ -371,12 +371,11 @@ void ExpManager::prepare_mutation(int indiv_id) {
  * Destructor of the ExpManager class
  */
 ExpManager::~ExpManager() {
-    delete stats_best;
-    delete stats_mean;
-/*
+    /*
     for (auto i = 0; i < nb_indivs_; ++i) {
         delete dna_mutator_array_[i];
-    }*/
+    }
+    */
     delete[] dna_mutator_array_;
 
     delete[] internal_organisms_;
@@ -434,12 +433,13 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 
 
     // Stats
+
+    stats_best.reinit(AeTime::time(), true);
+    stats_mean.reinit(AeTime::time(), false);
+
     if (first_gen) {
-        stats_best = new Stats(AeTime::time(), true);
-        stats_mean = new Stats(AeTime::time(), false);
-    } else {
-        stats_best->reinit(AeTime::time(), true);
-        stats_mean->reinit(AeTime::time(), false);
+        stats_best.prepare();
+        stats_mean.prepare();
     }
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
@@ -447,11 +447,11 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             prev_internal_organisms_[indiv_id]->compute_protein_stats();
     }
 
-    stats_best->compute_best(*(best_indiv.get()));
-    stats_mean->compute_average(*this);
+    stats_best.compute_best(*(best_indiv.get()));
+    stats_mean.compute_average(*this);
 
-    stats_best->write_best();
-    stats_mean->write_average();
+    stats_best.write_best();
+    stats_mean.write_average();
 }
 
 

@@ -37,7 +37,10 @@
  */
 Stats::Stats(int generation, bool best_or_not) {
     reinit(generation, best_or_not);
+    prepare();
+}
 
+void Stats::prepare() {
     if (generation_==1) {
         if (is_indiv_)
             statfile_best_.open("stats/stats_simd_best.csv",std::ofstream::trunc);

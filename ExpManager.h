@@ -124,9 +124,10 @@ public:
         double* target;
 
         int selection_pressure_;
-    //private:
-        Stats* stats_best = nullptr;
-        Stats* stats_mean = nullptr;
+
+private:
+        Stats stats_best;
+        Stats stats_mean;
 
 
         int grid_height_;

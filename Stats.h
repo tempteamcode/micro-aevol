@@ -40,6 +40,8 @@ class Organism;
  */
 class Stats {
 public:
+    inline Stats() : generation_(0) { }
+
     Stats(int generation, bool best_or_not);
 
     ~Stats() {
@@ -59,37 +61,38 @@ public:
     void write_average();
 
     void reinit(int generation, bool is_indiv);
+    void prepare();
 
     bool is_indiv() const { return is_indiv_; }
 
-protected:
+private:
     int generation_;
 
     bool is_indiv_;
 
     int pop_size_;
 
-    double fitness_ = 0;
-    double mean_fitness_ = 0;
-    double metabolic_error_ = 0;
-    double mean_metabolic_error_ = 0;
+    double fitness_;
+    double mean_fitness_;
+    double metabolic_error_;
+    double mean_metabolic_error_;
 
-    int amount_of_dna_ = 0;
-    float mean_amount_of_dna_ = 0;
-    int nb_coding_rnas_ = 0;
-    float mean_nb_coding_rnas_ = 0;
-    int nb_non_coding_rnas_ = 0;
-    float mean_nb_non_coding_rnas_ = 0;
+    int amount_of_dna_;
+    float mean_amount_of_dna_;
+    int nb_coding_rnas_;
+    float mean_nb_coding_rnas_;
+    int nb_non_coding_rnas_;
+    float mean_nb_non_coding_rnas_;
 
-    int nb_functional_genes_ = 0;
-    float mean_nb_functional_genes_ = 0;
-    int nb_non_functional_genes_ = 0;
-    float mean_nb_non_functional_genes_ = 0;
+    int nb_functional_genes_;
+    float mean_nb_functional_genes_;
+    int nb_non_functional_genes_;
+    float mean_nb_non_functional_genes_;
 
-    int nb_mut_ = 0;
-    float mean_nb_mut_ = 0;
-    int nb_switch_ = 0;
-    float mean_nb_switch_ = 0;
+    int nb_mut_;
+    float mean_nb_mut_;
+    int nb_switch_;
+    float mean_nb_switch_;
 
     bool is_computed_ = false;
 
