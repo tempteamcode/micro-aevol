@@ -51,8 +51,8 @@ int Dna::promoter_at(int pos) {
 }
 
 int Dna::terminator_at(int pos) {
-    unsigned int subseq = seq_.getSequence(pos+10-4+1, 4);
-    unsigned int temp = (lookuptable[ subseq & 0xff ]<<24 |
+    int_t subseq = seq_.getSequence(pos+10-4+1, 4);
+    int_t temp = (lookuptable[ subseq & 0xff ]<<24 |
                          lookuptable[ (subseq >> 8) & 0xff ]<<16 |
                          lookuptable[ (subseq >> 16 )& 0xff ]<< 8 |
                          lookuptable[ (subseq >>24 ) & 0xff ])
@@ -62,8 +62,8 @@ int Dna::terminator_at(int pos) {
 }
 
 bool Dna::shine_dal_start(int pos) {
-  unsigned int first_part = (SHINE_DAL_SEQ&0b111111000)>>3;
-  unsigned int second_part = (SHINE_DAL_SEQ&0b000000111);
+  int_t first_part = (SHINE_DAL_SEQ&0b111111000)>>3;
+  int_t second_part = (SHINE_DAL_SEQ&0b000000111);
 
   bool start = seq_.search(pos, 6, first_part);
 

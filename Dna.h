@@ -16,6 +16,8 @@
 
 constexpr int8_t CODON_SIZE = 3;
 
+typedef uint32_t int_t;
+
 constexpr const int PROM_SEQ = 0b0101011001110010010110;
 constexpr const int PROM_SEQ_LEN = 22; 
 constexpr const int SHINE_DAL_SEQ = 0b011011000;
