@@ -700,6 +700,7 @@ void Organism::translate_protein(double w_max) {
 /**
  * From the list of proteins, build the phenotype of an organism
  */
+/*
 void Organism::compute_phenotype() {
     double activ_phenotype[300]{};
     double inhib_phenotype[300]{};
@@ -784,12 +785,14 @@ void Organism::compute_phenotype() {
             phenotype[fuzzy_idx] = 0;
     }
 }
+*/
 
 /**
  * From the phenotype of an organism, compute its metabolic error and fitness
  *
  * @param selection_pressure : Selection pressure used during the selection process
  */
+/*
 void Organism::compute_fitness(double selection_pressure, double* target) {
     for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
         if (phenotype[fuzzy_idx] > 1)
@@ -810,4 +813,96 @@ void Organism::compute_fitness(double selection_pressure, double* target) {
 
     fitness = exp(-selection_pressure * ((double) metaerror));
 }
+*/
+
+
+/**
+ * From the phenotype of an organism, compute its metabolic error and fitness
+ *
+ * @param selection_pressure : Selection pressure used during the selection process
+ */
+void Organism::compute_fitness(double selection_pressure, double* target) {
+    double activ_phenotype[300]{};
+    double inhib_phenotype[300]{};
+
+    for (const Protein& protein : proteins) {
+        if (protein.is_init_ &&
+            fabs(protein.w) >= 1e-15 &&
+            fabs(protein.h) >= 1e-15 &&
+            protein.is_functional) {
+            // Compute triangle points' coordinates
+            double x0 = protein.m - protein.w;
+            double x1 = protein.m;
+            double x2 = protein.m + protein.w;
+
+            double h_times_e = protein.h * protein.e;
+
+            int ix0 = (int) (x0 * 300);
+            int ix1 = (int) (x1 * 300);
+            int ix2 = (int) (x2 * 300);
+
+            if (ix0 < 0) ix0 = 0; else if (ix0 > (299)) ix0 = 299;
+            if (ix1 < 0) ix1 = 0; else if (ix1 > (299)) ix1 = 299;
+            if (ix2 < 0) ix2 = 0; else if (ix2 > (299)) ix2 = 299;
+
+            // Compute the first equation of the triangle
+            double incY = h_times_e / (ix1 - ix0);
+            int count = 1;
+
+            // Updating value between x0 and x1
+            for (int i = ix0 + 1; i < ix1; i++) {
+                if (protein.h > 0)
+                    activ_phenotype[i] += (incY * (count++));
+                else
+                    inhib_phenotype[i] += (incY * (count++));
+            }
+
+            if (protein.h > 0)
+                activ_phenotype[ix1] += h_times_e;
+            else
+                inhib_phenotype[ix1] += h_times_e;
+
+            // Compute the second equation of the triangle
+            incY = h_times_e / (ix2 - ix1);
+            count = 1;
+
+            // Updating value between x1 and x2
+            for (int i = ix1 + 1; i < ix2; i++) {
+                if (protein.h > 0)
+                    activ_phenotype[i] += (h_times_e - (incY * (count++)));
+                else
+                    inhib_phenotype[i] += (h_times_e - (incY * (count++)));
+            }
+        }
+    }
+
+    for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
+        if (activ_phenotype[fuzzy_idx] > 1)
+            activ_phenotype[fuzzy_idx] = 1;
+        if (inhib_phenotype[fuzzy_idx] < -1)
+            inhib_phenotype[fuzzy_idx] = -1;
+    }
+
+    metaerror = 0;
+
+    double abs_delta_prev;
+    double abs_delta_curr;
+    for (int fuzzy_idx = 0; fuzzy_idx < 300; fuzzy_idx++) {
+        abs_delta_prev = abs_delta_curr;
+        
+        abs_delta_curr = activ_phenotype[fuzzy_idx] + inhib_phenotype[fuzzy_idx];
+        if (abs_delta_curr < 0) abs_delta_curr = 0;
+        if (abs_delta_curr > 1) abs_delta_curr = 1;
+
+        abs_delta_curr -= target[fuzzy_idx];
+        abs_delta_curr = std::fabs(abs_delta_curr);
+
+        if (fuzzy_idx != 0) {
+            metaerror += (abs_delta_prev + abs_delta_curr) / (600.0);
+        }
+    }
+
+    fitness = exp(-selection_pressure * ((double) metaerror));
+}
+
 

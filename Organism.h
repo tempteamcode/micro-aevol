@@ -97,7 +97,8 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
     void start_protein();
     void compute_protein();
     void translate_protein(double w_max);
-    void compute_phenotype();
+
+    inline void compute_phenotype() { } // void compute_phenotype();
     void compute_fitness(double selection_pressure, double* target);
 
     void reset_mutation_stats();
@@ -110,9 +111,6 @@ private:
     std::set<int> terminators;
     std::vector<RNA> rnas;
     std::vector<Protein> proteins;
-
-    double phenotype[300];
-    double delta[300];
 
 public:
     double fitness;
