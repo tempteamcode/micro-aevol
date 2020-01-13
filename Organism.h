@@ -84,8 +84,7 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     ~Organism() = default;
 
-    void save(gzFile backup_file);
-
+    void save(gzFile backup_file) const;
     void load(gzFile backup_file);
 
     inline int length() const { return dna_.length(); };

@@ -40,7 +40,7 @@ class Organism;
  */
 class Stats {
 public:
-    Stats(ExpManager* exp_m, int generation, bool best_or_not);
+    Stats(int generation, bool best_or_not);
 
     ~Stats() {
         if (is_indiv_) {
@@ -53,19 +53,16 @@ public:
     }
 
     void compute_best(const Organism& best_indiv);
-    void compute_average();
+    void compute_average(ExpManager& exp_m);
 
     void write_best();
     void write_average();
 
-    void reinit(int generation);
+    void reinit(int generation, bool is_indiv);
 
-    bool is_indiv() { return is_indiv_; }
-
+    bool is_indiv() const { return is_indiv_; }
 
 protected:
-    ExpManager* exp_m_;
-
     int generation_;
 
     bool is_indiv_;

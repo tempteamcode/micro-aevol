@@ -63,7 +63,7 @@ Organism::Organism(gzFile backup_file)
  *
  * @param backup_file : where to the save the organism
  */
-void Organism::save(gzFile backup_file) {
+void Organism::save(gzFile backup_file) const {
     gzwrite(backup_file, &indiv_id_, sizeof(indiv_id_));
     gzwrite(backup_file, &parent_id_, sizeof(parent_id_));
     gzwrite(backup_file, &global_id, sizeof(global_id));

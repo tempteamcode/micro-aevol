@@ -76,8 +76,8 @@ class ExpManager {
         ~ExpManager();
 
         void create_directory();
-        void save(int t);
 
+        void save(int t) const;
         void load(int t);
 
         void run_evolution(int nb_gen);

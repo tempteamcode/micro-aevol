@@ -32,7 +32,7 @@ public:
 
   inline int length() const { return seq_.size(); };
 
-  void save(gzFile backup_file);
+  void save(gzFile backup_file) const;
   void load(gzFile backup_file);
 
   inline void do_switch(int pos) {

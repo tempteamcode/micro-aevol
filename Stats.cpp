@@ -32,29 +32,11 @@
 /**
  * Create the data structure and open the file for the statistics of a simulation
  *
- * @param exp_m : the related ExpManager of the simulation
  * @param generation : Create statistics beginning from this generation (or resuming from this generation)
  * @param best_or_not : Statistics for the best organisms or mean of all the organisms
  */
-Stats::Stats(ExpManager* exp_m, int generation, bool best_or_not) {
-    exp_m_ = exp_m;
-    is_indiv_ = best_or_not;
-    generation_ = generation;
-
-    pop_size_ = 0;
-
-    fitness_ = 0;
-    metabolic_error_ = 0;
-
-    amount_of_dna_ = 0;
-    nb_coding_rnas_ = 0;
-    nb_non_coding_rnas_ = 0;
-
-    nb_functional_genes_ = 0;
-    nb_non_functional_genes_ = 0;
-
-    nb_mut_ = 0;
-    nb_switch_ = 0;
+Stats::Stats(int generation, bool best_or_not) {
+    reinit(generation, best_or_not);
 
     if (generation_==1) {
         if (is_indiv_)
@@ -164,9 +146,9 @@ void Stats::compute_best(const Organism& best_indiv) {
 /**
  * Compute the statistics of the mean of the whole population
  */
-void Stats::compute_average() {
+void Stats::compute_average(ExpManager& exp_m) {
     is_indiv_ = false;
-    pop_size_ = exp_m_->nb_indivs_;
+    pop_size_ = exp_m.nb_indivs_;
 
     mean_fitness_ = 0;
     mean_metabolic_error_ = 0;
@@ -180,7 +162,7 @@ void Stats::compute_average() {
     mean_nb_switch_ = 0;
     
     for (int indiv_id = 0; indiv_id < pop_size_; indiv_id++) {
-        const Organism& indiv = *(exp_m_->prev_internal_organisms_[indiv_id].get());
+        const Organism& indiv = *(exp_m.prev_internal_organisms_[indiv_id].get());
 
         mean_fitness_ += indiv.fitness;
         mean_metabolic_error_ += indiv.metaerror;
@@ -220,40 +202,35 @@ void Stats::compute_average() {
  * Write the statistics of the best organism to the related statistics file
  */
 void Stats::write_best() {
-    if (is_indiv_ && !is_computed_)
-        compute_best(*(exp_m_->best_indiv.get()));
+    assert(is_indiv_ && is_computed_);
 
-    if (is_indiv_ && is_computed_) {
-        // Write best stats
-        statfile_best_<<generation_<<","<<fitness_<<","<<metabolic_error_<<","<<
-                      amount_of_dna_<<","<<nb_coding_rnas_<<","<<nb_non_coding_rnas_<<","<<
-                      nb_functional_genes_<<","<<nb_non_functional_genes_<<","<<nb_mut_
-                      <<","<<nb_switch_<<std::endl;
-        statfile_best_.flush();
-    }
+    // Write best stats
+    statfile_best_<<generation_<<","<<fitness_<<","<<metabolic_error_<<","<<
+                  amount_of_dna_<<","<<nb_coding_rnas_<<","<<nb_non_coding_rnas_<<","<<
+                  nb_functional_genes_<<","<<nb_non_functional_genes_<<","<<nb_mut_
+                  <<","<<nb_switch_<<std::endl;
+    statfile_best_.flush();
 }
 
 /**
  * Write the statistics of the mean of the population to the related statistics file
  */
 void Stats::write_average() {
-    if (!is_indiv_ && !is_computed_)
-        compute_average();
+    assert(!is_indiv_ && is_computed_);
 
-    if (!is_indiv_ && is_computed_) {
-        // Write average stats
-        statfile_mean_<<generation_<<","<<mean_fitness_<<","<<mean_metabolic_error_<<","<<
-                      mean_amount_of_dna_<<","<<mean_nb_coding_rnas_<<","<<mean_nb_non_coding_rnas_<<","<<
-                      mean_nb_functional_genes_<<","<<mean_nb_non_functional_genes_<<","<<mean_nb_mut_
-                      <<","<<mean_nb_switch_<<std::endl;
-        statfile_mean_.flush();
-    }
+    // Write average stats
+    statfile_mean_<<generation_<<","<<mean_fitness_<<","<<mean_metabolic_error_<<","<<
+                  mean_amount_of_dna_<<","<<mean_nb_coding_rnas_<<","<<mean_nb_non_coding_rnas_<<","<<
+                  mean_nb_functional_genes_<<","<<mean_nb_non_functional_genes_<<","<<mean_nb_mut_
+                  <<","<<mean_nb_switch_<<std::endl;
+    statfile_mean_.flush();
 }
 
 /**
  * Reinitilized the statistics variable before computing next generation
  */
-void Stats::reinit(int generation) {
+void Stats::reinit(int generation, bool is_indiv) {
+    is_indiv_ = is_indiv;
     generation_ = generation;
 
     pop_size_ = 0;

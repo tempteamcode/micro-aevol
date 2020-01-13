@@ -209,7 +209,7 @@ void ExpManager::create_directory() {
  *
  * @param t : simulated time of the checkpoint
  */
-void ExpManager::save(int t) {
+void ExpManager::save(int t) const {
 
     char exp_backup_file_name[255];
 
@@ -435,11 +435,11 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 
     // Stats
     if (first_gen) {
-        stats_best = new Stats(this, AeTime::time(), true);
-        stats_mean = new Stats(this, AeTime::time(), false);
+        stats_best = new Stats(AeTime::time(), true);
+        stats_mean = new Stats(AeTime::time(), false);
     } else {
-        stats_best->reinit(AeTime::time());
-        stats_mean->reinit(AeTime::time());
+        stats_best->reinit(AeTime::time(), true);
+        stats_mean->reinit(AeTime::time(), false);
     }
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
@@ -447,9 +447,11 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             prev_internal_organisms_[indiv_id]->compute_protein_stats();
     }
 
+    stats_best->compute_best(*(best_indiv.get()));
+    stats_mean->compute_average(*this);
+
     stats_best->write_best();
     stats_mean->write_average();
-
 }
 
 

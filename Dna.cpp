@@ -12,7 +12,7 @@ Dna::Dna(int length, Threefry::Gen&& rng) : seq_(length) {
   }
 }
 
-void Dna::save(gzFile backup_file) {
+void Dna::save(gzFile backup_file) const {
     int dna_length = length();
     gzwrite(backup_file, &dna_length, sizeof(dna_length));
     gzwrite(backup_file, seq_.data(), dna_length * sizeof(seq_[0]));
