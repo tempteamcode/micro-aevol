@@ -40,12 +40,12 @@ using namespace std;
  * @param exp_m : Related ExpManager object
  * @param clone : The organism to clone
  */
-Organism::Organism(ExpManager *exp_m, const Organism& clone)
-: exp_m_(exp_m)
+Organism::Organism(const Organism& other)
+: exp_m_(other.exp_m_)
 , rna_count_(0)
-, parent_length_(clone.length())
-, dna_(clone.dna_)
-, promoters_(clone.promoters_)
+, parent_length_(other.length())
+, dna_(other.dna_)
+, promoters_(other.promoters_)
 {
 }
 
@@ -56,26 +56,10 @@ Organism::Organism(ExpManager *exp_m, const Organism& clone)
  * @param backup_file : gzFile to read from
  */
 Organism::Organism(ExpManager *exp_m, gzFile backup_file)
-: exp_m_(exp_m), rna_count_(0)
+: exp_m_(exp_m)
+, rna_count_(0)
 {
     load(backup_file);
-}
-
-/**
- * Destructor of an organism
- */
-Organism::~Organism() {
-    for (auto rna : rnas) {
-        delete (rna);
-    }
-    rnas.clear();
-
-    for (auto prot : proteins) {
-        delete (prot);
-    }
-    proteins.clear();
-
-    terminators.clear();
 }
 
 /**
@@ -126,26 +110,22 @@ void Organism::compute_protein_stats() {
     nb_non_coding_RNAs = 0;
 
     for (int i = 0; i < rna_count_; i++) {
-        if (rnas[i] != nullptr) {
-            if (rnas[i]->is_coding_)
-                nb_coding_RNAs++;
-            else
-                nb_non_coding_RNAs++;
-        }
+        if (rnas[i].is_coding_)
+            nb_coding_RNAs++;
+        else
+            nb_non_coding_RNAs++;
     }
 
     for (int i = 0; i < protein_count_; i++) {
-        if (rnas[i] != nullptr) {
-            if (proteins[i]->is_functional) {
-                nb_func_genes++;
-            } else {
-                nb_non_func_genes++;
-            }
-            if (proteins[i]->h > 0) {
-                nb_genes_activ++;
-            } else {
-                nb_genes_inhib++;
-            }
+        if (proteins[i].is_functional) {
+            nb_func_genes++;
+        } else {
+            nb_non_func_genes++;
+        }
+        if (proteins[i].h > 0) {
+            nb_genes_activ++;
+        } else {
+            nb_genes_inhib++;
         }
     }
 }

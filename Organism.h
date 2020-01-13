@@ -82,11 +82,11 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
 {
 }*/
 
-    Organism(ExpManager *exp_m, const Organism& clone);
+    Organism(const Organism& other);
 
     Organism(ExpManager *exp_m, gzFile backup_file);
 
-    ~Organism();
+    ~Organism() = default;
 
     void save(gzFile backup_file);
 
@@ -103,8 +103,8 @@ Organism(ExpManager *exp_m, int length, int indiv_id)
     std::map<int, Promoter> promoters_;
 
     std::set<int> terminators;
-    std::vector<RNA *> rnas;
-    std::vector<Protein *> proteins;
+    std::vector<RNA> rnas;
+    std::vector<Protein> proteins;
 
     double phenotype[300];
     double delta[300];
