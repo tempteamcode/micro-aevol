@@ -28,11 +28,6 @@ constexpr const int PROTEIN_END     = 0b001; // CODON_STOP
 constexpr const int PROTEIN_END_REV = 0b100; // POTS_NODOC
 constexpr const int PROTEIN_END_LEN = 3;
 
-// used in Algorithms.cu
-#define PROM_SEQ_BIT(n) ((PROM_SEQ>>(PROM_SEQ_LEN-n-1)) & 0b1)
-#define SHINE_DAL_SEQ_BIT(n) ((SHINE_DAL_SEQ>>(SHINE_DAL_SEQ_LEN-n-1)) & 0b1)
-#define PROTEIN_END_BIT(n) ((PROTEIN_END>>(PROTEIN_END_LEN-n-1)) & 0b1)
-
 class ExpManager;
 
 class Dna {

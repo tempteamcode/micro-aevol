@@ -16,6 +16,10 @@
 
 using namespace std;
 
+constexpr char* PROM_SEQ_STR        = "0101011001110010010110";
+constexpr char* SHINE_DAL_SEQ_STR   = "011011000";
+constexpr char* PROTEIN_END_STR     = "001"; // CODON_STOP
+
 #define DEBUG 1
 // Convenience function for checking CUDA runtime API results
 // can be wrapped around any runtime API call. No-op in release builds.
@@ -279,7 +283,7 @@ void search_start_stop_RNA(size_t* dna_size, char* dna, size_t* dna_offset, int*
         for (int motif_id = 0; motif_id < 26; motif_id++) {
             if (motif_id < 22) {
                 prom_dist[motif_id] =
-                        PROM_SEQ_BIT(motif_id) ==
+                        PROM_SEQ_STR[motif_id] ==
                         dna[dna_pos + motif_id >= dna_size[indiv_id] ? dna_offset[indiv_id]+ dna_pos + motif_id - dna_size[indiv_id]
                                                                      : dna_offset[indiv_id]+ dna_pos + motif_id]
                         ? 0
@@ -513,7 +517,7 @@ void compute_start_protein(int8_t* start_protein, size_t* dna_size, size_t* dna_
                                                      c_pos,t_pos,
                                                      rna[globalIdx].begin,rna[globalIdx].end,
                                                      dna_size[indiv_id]);assert(0);}
-                        if (dna[dna_offset[indiv_id]+t_pos] == SHINE_DAL_SEQ_BIT(k)) {
+                        if (dna[dna_offset[indiv_id]+t_pos] == SHINE_DAL_SEQ_STR[k]) {
                             start = true;
                         } else {
                             start = false;
@@ -655,7 +659,7 @@ void compute_proteins( int8_t* start_protein, size_t* dna_size, size_t* dna_offs
                       start_protein_pos - dna_size[indiv_id] + k :
                       start_protein_pos + k;
 
-                if (dna[dna_offset[indiv_id]+t_k] == PROTEIN_END_BIT(k)) {
+                if (dna[dna_offset[indiv_id]+t_k] == PROTEIN_END_STR[k]) {
                     is_protein = true;
                 } else {
                     is_protein = false;
