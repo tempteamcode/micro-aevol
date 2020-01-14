@@ -1,31 +1,11 @@
+#ifndef OWN_BITSET_H
+#define OWN_BITSET_H
+
 #include <vector>
 #include <utility>
 #include <cstring> // std::memcpy
 
-
-#include <cstdint>
-
-#define R2(n)    n,     n + 2*64,     n + 1*64,     n + 3*64
-#define R4(n) R2(n), R2(n + 2*16), R2(n + 1*16), R2(n + 3*16)
-#define R6(n) R4(n), R4(n + 2*4 ), R4(n + 1*4 ), R4(n + 3*4 )
-
-const uint32_t lookuptable[256] = { R6(0), R6(2), R6(1), R6(3) };
-
-const uint32_t MASKS[21] = {1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535,131071,262143,524287,1048575,2097151};
-
-inline uint32_t reverse_int(int len, uint32_t val)
-{
-  return (lookuptable[(val      ) & 0xff] << 24 |
-          lookuptable[(val >>  8) & 0xff] << 16 |
-          lookuptable[(val >> 16) & 0xff] <<  8 |
-          lookuptable[(val >> 24) & 0xff]
-         ) >> (sizeof(uint32_t)*8 - len);
-}
-
-inline uint32_t count_nb_ones(uint32_t n) {
-  return __builtin_popcount(n);
-}
-
+#include "bits.h"
 
 template <typename item_t>
 class uninitialized_vector
@@ -366,23 +346,7 @@ public:
   }
 
   inline int_t getSequence(int pos, int len) {
-    return reverse_int(len, getSequenceRev(pos, len));
-  }
-
-  inline bool searchRev(int pos, int len, int_t toSearchRev) {
-    return getSequenceRev(pos, len) == toSearchRev;
-  }
-
-  inline bool search(int pos, int len, int_t toSearch) {
-    return searchRev(pos, len, reverse_int(len, toSearch));
-  }
-
-  inline int getHammingDistanceRev(int pos, int len, int_t toSearchRev) {
-    return count_nb_ones(getSequenceRev(pos, len) ^ toSearchRev);
-  }
-
-  inline int getHammingDistance(int pos, int len, int_t toSearch) {
-    return getHammingDistanceRev(pos, len, reverse_int(len, toSearch));
+    return bits_reverse(len, getSequenceRev(pos, len));
   }
 
 private:
@@ -390,3 +354,4 @@ private:
   vec_t data;
 };
 
+#endif //OWN_BITSET_H

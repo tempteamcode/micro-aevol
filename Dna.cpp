@@ -5,6 +5,8 @@
 #include "Dna.h"
 #include "ExpManager.h"
 
+#include "bits.h"
+
 Dna::Dna(const Dna& clone) : seq_(clone.seq_) {
 }
 
@@ -47,24 +49,24 @@ void Dna::do_switch(int pos) {
 }
 
 int Dna::promoter_at(int pos) {
-    return seq_.getHammingDistance(pos, PROM_SEQ_LEN, PROM_SEQ);
+    return hamming_distance(seq_.getSequenceRev(pos, PROM_SEQ_LEN), PROM_SEQ_REV);
 }
 
 int Dna::terminator_at(int pos) {
     int_t subseq_rev = seq_.getSequence(pos+10-4+1, 4);
-    return seq_.getHammingDistanceRev(pos, 4, subseq_rev);
+    return hamming_distance(seq_.getSequenceRev(pos, 4), subseq_rev);
 }
 
 bool Dna::shine_dal_start(int pos) {
     const int_t first_part_rev = (SHINE_DAL_SEQ_REV&0b000111111);
     const int_t second_part_rev = (SHINE_DAL_SEQ_REV&0b111000000)>>6;
 
-    return seq_.searchRev(pos, 6, first_part_rev) &&
-           seq_.searchRev(pos+10, 3, second_part_rev);
+    return seq_.getSequenceRev(pos, 6) == first_part_rev &&
+           seq_.getSequenceRev(pos+10, 3) == second_part_rev;
 }
 
 bool Dna::protein_stop(int pos) {
-    return seq_.searchRev(pos, PROTEIN_END_LEN, PROTEIN_END_REV);
+    return seq_.getSequenceRev(pos, PROTEIN_END_LEN) == PROTEIN_END_REV;
 }
 
 int Dna::codon_at(int pos) {
