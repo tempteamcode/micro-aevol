@@ -16,9 +16,9 @@
 
 using namespace std;
 
-constexpr char* PROM_SEQ_STR        = "0101011001110010010110";
-constexpr char* SHINE_DAL_SEQ_STR   = "011011000";
-constexpr char* PROTEIN_END_STR     = "001"; // CODON_STOP
+constexpr const char* PROM_SEQ_STR        = "0101011001110010010110";
+constexpr const char* SHINE_DAL_SEQ_STR   = "011011000";
+constexpr const char* PROTEIN_END_STR     = "001"; // CODON_STOP
 
 #define DEBUG 1
 // Convenience function for checking CUDA runtime API results
@@ -61,9 +61,8 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
   }
 
   // Create shorthands
-  std::string seq0string = exp_m->internal_organisms_[0]->dna_->seq_.export_string();
-  auto seq0 = seq0string.data();
-  auto len0 = seq0string.size();
+  auto seq0 = exp_m->internal_organisms_[0]->dna_->seq_.export_string(nullptr, 0);
+  auto len0 = exp_m->internal_organisms_[0]->dna_->seq_.size();
 
     allocated_global_dna_size = global_dna_size*5;
 
@@ -76,6 +75,7 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
                        seq0,
                        len0 * sizeof(char),
                        cudaMemcpyHostToDevice));
+  delete[] seq0;
 
   // Send dna_size array
   checkCuda(cudaMalloc((void**) &dna_size,

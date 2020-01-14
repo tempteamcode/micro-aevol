@@ -125,14 +125,17 @@ Organism::~Organism() {
  *
  * @param backup_file : where to the save the organism
  */
-void Organism::save(gzFile backup_file) {
+char* Organism::save(gzFile backup_file, char* buffer, size_t size) {
     gzwrite(backup_file, &indiv_id_, sizeof(indiv_id_));
     gzwrite(backup_file, &parent_id_, sizeof(parent_id_));
     gzwrite(backup_file, &global_id, sizeof(global_id));
 
     gzwrite(backup_file, &parent_length_, sizeof(parent_length_));
 
-    dna_->save(backup_file);
+    return dna_->save(backup_file, buffer, size);
+}
+void Organism::save(gzFile backup_file) {
+    delete[] dna_->save(backup_file, nullptr, 0);
 }
 
 /**

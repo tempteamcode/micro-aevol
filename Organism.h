@@ -59,7 +59,7 @@ public:
     ~Organism();
 
     void save(gzFile backup_file);
-
+    char* save(gzFile backup_file, char* buffer, size_t size);
     void load(gzFile backup_file);
 
     int length() { return dna_->length(); };
