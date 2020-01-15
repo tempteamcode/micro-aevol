@@ -33,13 +33,9 @@ class ExpManager;
 class Dna {
 
  public:
-  Dna() = default;
-
-  Dna(const Dna& clone);
-
   Dna(int length, Threefry::Gen& rng);
 
-  Dna(char* genome, int length);
+  Dna(int length, char* genome);
 
   Dna(int length);
 
@@ -48,7 +44,7 @@ class Dna {
   int length() const;
 
   void save(gzFile backup_file);
-  void load(gzFile backup_file);
+  friend Dna Dna_load(gzFile backup_file);
 
   void do_switch(int pos);
 
@@ -62,5 +58,23 @@ class Dna {
 
   int codon_at(int pos);
 
-  own_dynamic_bitset seq_;
+  own_bitset seq_;
 };
+
+inline void Dna::save(gzFile backup_file) {
+    int dna_length = length();
+    std::string data = seq_.export_string();
+    gzwrite(backup_file, &dna_length, sizeof(dna_length));
+    gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));
+}
+
+inline Dna Dna_load(gzFile backup_file) {
+    int dna_length;
+    gzread(backup_file, &dna_length, sizeof(dna_length));
+
+    char tmp_seq[dna_length];
+    gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
+
+    return Dna(dna_length, tmp_seq);
+}
+

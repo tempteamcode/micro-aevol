@@ -64,10 +64,9 @@ Organism::Organism(ExpManager *exp_m, char *genome, int indiv_id) {
 
     rna_count_ = 0;
 
-    dna_ = new Dna(genome, strlen(genome));
+    dna_ = new Dna(strlen(genome), genome);
     parent_length_ = strlen(genome);
     indiv_id_ = indiv_id;
-
 }
 
 /**
@@ -147,8 +146,7 @@ void Organism::load(gzFile backup_file) {
 
     gzread(backup_file, &parent_length_, sizeof(parent_length_));
 
-    dna_ = new Dna();
-    dna_->load(backup_file);
+    dna_ = new Dna(Dna_load(backup_file));
 }
 
 /**

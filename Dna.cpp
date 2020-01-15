@@ -7,17 +7,10 @@
 
 #include "bits.h"
 
-Dna::Dna(const Dna& clone) : seq_(clone.seq_) {
-}
-
 // Generate a random genome
-Dna::Dna(int length, Threefry::Gen& rng) : seq_(length, [&rng] () { return (rng.random(NB_BASE) != 0); })
-{
-}
+Dna::Dna(int length, Threefry::Gen& rng) : seq_(length, [&rng] () { return (rng.random(NB_BASE) != 0); }) { }
 
-Dna::Dna(char* genome, int length) : seq_(length) {
-  seq_.import_string(genome, length);
-}
+Dna::Dna(int length, char* genome) : seq_(genome, length) { }
 
 Dna::Dna(int length) : seq_(length) {
   seq_.set_all(false);
@@ -25,23 +18,6 @@ Dna::Dna(int length) : seq_(length) {
 
 int Dna::length() const {
   return seq_.size();
-}
-
-void Dna::save(gzFile backup_file) {
-    int dna_length = length();
-    std::string data = seq_.export_string();
-    gzwrite(backup_file, &dna_length, sizeof(dna_length));
-    gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));
-}
-
-void Dna::load(gzFile backup_file) {
-    int dna_length;
-    gzread(backup_file, &dna_length, sizeof(dna_length));
-
-    char tmp_seq[dna_length];
-    gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
-
-    seq_.import_string(tmp_seq, dna_length);
 }
 
 void Dna::do_switch(int pos) {
