@@ -598,14 +598,13 @@ public:
     int_t result = getSequence(start, len);
     int_t mask = MASKS[len-1];
 
-    callback(start, result);
+    size_t pos = start + len;
+    callback(pos, result);
 
-    size_t index = start / sizeof_int;
-    int subindex = start % sizeof_int;
+    size_t index = pos / sizeof_int;
+    int subindex = pos % sizeof_int;
     int_t* ptr = &data[index];
-    int_t val = *ptr;
-
-    size_t pos = start;
+    int_t val = *ptr >> subindex;
 
     if (count --> 0)
     while (count --> 0)

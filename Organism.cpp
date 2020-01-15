@@ -318,7 +318,7 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
     }
     // Hamming distance of the sequence from the promoter consensus
 
-/*
+//*
     for (int32_t i = pos_1; i < pos_2; i++) {
         int8_t dist = dna_->promoter_at(i);
 
@@ -326,27 +326,28 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
             add_new_promoter(i, dist);
         }
     }
-*/
+//*/
 
-    dna_->seq_.forSequences(pos_1, pos_2-pos_1, PROM_SEQ_LEN, [&] (size_t pos, int_t sequence) {
+/*
+    dna_->seq_.forSequences(pos_1, pos_2-pos_1, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
        int dist = hamming_distance(sequence, PROM_SEQ);
        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         add_new_promoter(pos, dist);
+         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_->length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
        }
     });
-
+*/
 }
 
 void Organism::look_for_new_promoters_starting_after(int32_t pos) {
-
-    dna_->seq_.forSequences(pos, dna_->length() - pos, PROM_SEQ_LEN, [&] (size_t pos, int_t sequence) {
+/*
+    dna_->seq_.forSequences(pos, dna_->length() - pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
        int dist = hamming_distance(sequence, PROM_SEQ);
        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         add_new_promoter(pos, dist);
+         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_->length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
        }
     });
-
-/*
+*/
+//*
     for (int32_t i = pos; i < dna_->length(); i++) {
         int dist = dna_->promoter_at(i);
 
@@ -354,20 +355,20 @@ void Organism::look_for_new_promoters_starting_after(int32_t pos) {
             add_new_promoter(i, dist);
         }
     }
-*/
+//*/
 }
 
 void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     // Hamming distance of the sequence from the promoter consensus
-
-    dna_->seq_.forSequences(0, pos, PROM_SEQ_LEN, [&] (size_t pos, int_t sequence) {
+/*
+    dna_->seq_.forSequences(0, pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
        int dist = hamming_distance(sequence, PROM_SEQ);
        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         add_new_promoter(pos, dist);
+         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_->length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
        }
     });
-
-/*
+*/
+//*
     for (int32_t i = 0; i < pos; i++) {
 
         int dist = dna_->promoter_at(i);
@@ -376,6 +377,6 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
             add_new_promoter(i, dist);
         }
     }
-*/
+//*/
 }
 
