@@ -593,6 +593,38 @@ public:
     return bits_reverse(len, getSequenceRev(pos, len));
   }
 
+  template <typename callback_t>
+  int_t forSequences(size_t start, size_t count, int len, callback_t callback) {
+    int_t result = getSequence(start, len);
+    int_t mask = MASKS[len-1];
+
+    callback(start, result);
+
+    size_t index = start / sizeof_int;
+    int subindex = start % sizeof_int;
+    int_t* ptr = &data[index];
+    int_t val = *ptr;
+
+    size_t pos = start;
+
+    if (count --> 0)
+    while (count --> 0)
+    {
+      subindex++;
+      if (++pos == used)
+      {
+        index = 0; subindex = 0; ptr = data; val = *ptr;
+      }
+      if (subindex == sizeof_int)
+      {
+        index++; subindex = 0; val = *++ptr;
+      }
+
+      callback(pos, result = ((result << 1) & mask) | (val & 1));
+      val >>= 1;
+    }
+  }
+
 private:
   const size_t used;
   int_t* data;
