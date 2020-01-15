@@ -61,8 +61,9 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
   }
 
   // Create shorthands
-  auto seq0 = exp_m->internal_organisms_[0]->dna_->seq_.export_string(nullptr, 0);
-  auto len0 = exp_m->internal_organisms_[0]->dna_->seq_.size();
+  std::string seq0string = exp_m->internal_organisms_[0]->dna_->seq_.export_string();
+  auto seq0 = seq0string.data();
+  auto len0 = seq0string.size();
 
     allocated_global_dna_size = global_dna_size*5;
 
@@ -75,7 +76,6 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
                        seq0,
                        len0 * sizeof(char),
                        cudaMemcpyHostToDevice));
-  delete[] seq0;
 
   // Send dna_size array
   checkCuda(cudaMalloc((void**) &dna_size,

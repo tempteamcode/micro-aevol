@@ -253,15 +253,12 @@ public:
     if (mask != 1) data[index++] = val;
   }
   
-  char* export_string(char* bits, size_t size) const
+  std::string export_string() const
   {
-    if (size < used + 1)
-    {
-      delete[] bits;
-      bits = new char[used + 1];
-    }
-    char* buffer = bits;
-
+    std::string result;
+    char* buffer = new char[used + 1];
+    char* bits = buffer;
+    
     /*
     for (size_t pos = 0; pos < used; pos++)
     {
@@ -282,13 +279,7 @@ public:
     }
     
     *bits = '\0';
-    return buffer;
-  }
-
-  inline std::string export_string() const
-  {
-    char* buffer = export_string(nullptr, 0);
-    std::string result(buffer);
+    result = buffer;
     delete[] buffer;
     return result;
   }

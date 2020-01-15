@@ -27,16 +27,11 @@ int Dna::length() const {
   return seq_.size();
 }
 
-char* Dna::save(gzFile backup_file, char* buffer, size_t size) {
-    int dna_length = length();
-    buffer = seq_.export_string(buffer, size);
-    gzwrite(backup_file, &dna_length, sizeof(dna_length));
-    gzwrite(backup_file, buffer, dna_length * sizeof(char));
-    return buffer;
-}
-
 void Dna::save(gzFile backup_file) {
-    delete[] save(backup_file, nullptr, 0);
+    int dna_length = length();
+    std::string data = seq_.export_string();
+    gzwrite(backup_file, &dna_length, sizeof(dna_length));
+    gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));
 }
 
 void Dna::load(gzFile backup_file) {

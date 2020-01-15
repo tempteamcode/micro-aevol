@@ -254,13 +254,9 @@ void ExpManager::save(int t) {
         gzwrite(exp_backup_file, &tmp, sizeof(tmp));
     }
 
-    char* buffer = nullptr; size_t buffer_size = 0;
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-      Organism& organism = *(prev_internal_organisms_[indiv_id].get());
-      buffer = organism.save(exp_backup_file, buffer, buffer_size);
-      if (organism.length() > buffer_size + 1) buffer_size = organism.length() + 1;
+        prev_internal_organisms_[indiv_id]->save(exp_backup_file);
     }
-    delete[] buffer;
 
     rng_->save(exp_backup_file);
 
