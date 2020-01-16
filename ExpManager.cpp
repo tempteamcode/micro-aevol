@@ -497,6 +497,22 @@ void ExpManager::start_stop_RNA(int indiv_id) {
             int dna_pos = pos_plus_len < PROM_SEQ_LEN ? organism.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
             organism.terminators.insert(dna_pos);
         }
+
+
+      const Dna* dna_ = organism.dna_;
+      static int errcount = 0;
+
+      int pos = pos_plus_len < PROM_SEQ_LEN ? dna_->length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+      int_t sequence_real = dna_->seq_.getSequence(pos, PROM_SEQ_LEN);
+
+      if (sequence != sequence_real) {
+        std::cout << "@" << pos << " " << std::bitset<PROM_SEQ_LEN>(sequence) << "!=" << std::bitset<PROM_SEQ_LEN>(sequence_real) << std::endl;
+        
+        if (++errcount == 10) throw errcount;
+      }
+
+
+
     });
 }
 

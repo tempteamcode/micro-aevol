@@ -530,7 +530,7 @@ public:
     return result;
   }
 
-  int_t getSequenceRev(int pos, int len) {
+  int_t getSequenceRev(int pos, int len) const {
       if (pos >= used) pos -= used;
       size_t index = (pos/ sizeof_int);
       int subindex = pos % sizeof_int;
@@ -591,12 +591,12 @@ public:
       return res;
   }
 
-  inline int_t getSequence(int pos, int len) {
+  inline int_t getSequence(int pos, int len) const {
     return bits_reverse(len, getSequenceRev(pos, len));
   }
 
   template <typename callback_t>
-  int_t forSequences(size_t start, size_t count, int len, callback_t callback) {
+  int_t forSequences(size_t start, size_t count, int len, callback_t callback) const {
     int_t result = getSequence(start, len);
     int_t mask = MASKS[len-1];
 
@@ -612,18 +612,17 @@ public:
     if (count --> 0)
     while (count --> 0)
     {
+      result = ((result << 1) & mask) | (val & 1);
+      val >>= 1;
+
       if (++pos == used)
       {
-        index = 0; subindex = 0; ptr = data; val = *ptr;
-//std::cout << "@" << pos << " " << std::bitset<32>(data[index]) << std::endl;
+        index = 0; subindex = 0; val = *(ptr = data);
       }
-      else if (subindex++ == sizeof_int)
+      else if (++subindex == sizeof_int)
       {
         index++; subindex = 0; val = *++ptr;
       }
-//std::cout << "@" << pos << " " << std::bitset<32>(result) << " < " << std::bitset<32>(val) << std::endl;
-      result = ((result << 1) & mask) | (val & 1); // callback(pos, result = ((result << 1) & mask) | (val & 1));
-      val >>= 1;
 
       callback(pos, result);
     }
