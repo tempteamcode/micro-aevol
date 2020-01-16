@@ -7,8 +7,6 @@
 
 #include "bits.h"
 
-#include <bitset>
-
 /*
 template <typename item_t>
 class uninitialized_vector
