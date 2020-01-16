@@ -460,7 +460,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
  * @param indiv_id : Unique identification number of the organism
  */
 void ExpManager::start_stop_RNA(int indiv_id) {
-
+/*
     for (int dna_pos = 0; dna_pos < internal_organisms_[indiv_id]->length(); dna_pos++) {
         if (internal_organisms_[indiv_id]->length() >= PROM_SIZE) {
             int dist_lead = internal_organisms_[indiv_id]->dna_->promoter_at(dna_pos);
@@ -478,40 +478,26 @@ void ExpManager::start_stop_RNA(int indiv_id) {
             }
         }
     }
+*/
 
-/*
     Organism& organism = (*internal_organisms_[indiv_id].get());
 
     organism.dna_->seq_.forSequences(0, organism.length(), PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+        int dist = hamming_distance(sequence, PROM_SEQ);
+        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
+            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? organism.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+            organism.add_new_promoter(dna_pos, dist);
+        }
 
-       int dist = hamming_distance(sequence, PROM_SEQ);
-       if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         int dna_pos = pos_plus_len < PROM_SEQ_LEN ? organism.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
-         organism.add_new_promoter(dna_pos, dist);
-       }
-
-            // Computing if a terminator exists at that position
-            int_t subseq_rev = lookuptable[(sequence >> 7) & 0xf0];
-            int_t getseq_rev = (sequence >> 22-4);
-            int dist_term_lead = hamming_distance(getseq_rev, subseq_rev);
-            if (dist_term_lead == 4) {
-                int dna_pos = pos_plus_len < PROM_SEQ_LEN ? organism.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
-                organism.terminators.insert(dna_pos);
-            }
-
-//    if (count == 0) std::cout << organism.dna_->seq_.export_string() << std::endl;
-*/
-/*
-    std::cout << pos_plus_len << ' ' << std::bitset<22>(sequence) << " => "
-      << std::bitset<4>(organism.dna_->seq_.getSequenceRev(pos_plus_len-PROM_SEQ_LEN+10-4+1, 4)) << "=" << std::bitset<4>(lookuptable[(sequence >> 7) & 0xf0]) << " : "
-      << std::bitset<4>(organism.dna_->seq_.getSequence(pos_plus_len-PROM_SEQ_LEN, 4)) << "=" << std::bitset<4>(sequence >> 22-4) << "\n";
-*/
-/*
-    count++;
-    if (++count == 32) throw 4; //std::Exception();
+        // Computing if a terminator exists at that position
+        int_t subseq_rev = lookuptable[(sequence >> 7) & 0xf0];
+        int_t getseq_rev = (sequence >> 22-4);
+        int dist_term_lead = hamming_distance(getseq_rev, subseq_rev);
+        if (dist_term_lead == 4) {
+            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? organism.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+            organism.terminators.insert(dna_pos);
+        }
     });
-*/
-
 }
 
 /**
