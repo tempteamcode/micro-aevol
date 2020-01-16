@@ -7,6 +7,8 @@
 
 #include "bits.h"
 
+#include <bitset>
+
 /*
 template <typename item_t>
 class uninitialized_vector
@@ -599,6 +601,7 @@ public:
     int_t mask = MASKS[len-1];
 
     size_t pos = start + len;
+    if (pos >= used) pos -= used;
     callback(pos, result);
 
     size_t index = pos / sizeof_int;
@@ -609,18 +612,20 @@ public:
     if (count --> 0)
     while (count --> 0)
     {
-      subindex++;
       if (++pos == used)
       {
         index = 0; subindex = 0; ptr = data; val = *ptr;
+//std::cout << "@" << pos << " " << std::bitset<32>(data[index]) << std::endl;
       }
-      if (subindex == sizeof_int)
+      else if (subindex++ == sizeof_int)
       {
         index++; subindex = 0; val = *++ptr;
       }
-
-      callback(pos, result = ((result << 1) & mask) | (val & 1));
+//std::cout << "@" << pos << " " << std::bitset<32>(result) << " < " << std::bitset<32>(val) << std::endl;
+      result = ((result << 1) & mask) | (val & 1); // callback(pos, result = ((result << 1) & mask) | (val & 1));
       val >>= 1;
+
+      callback(pos, result);
     }
   }
 
