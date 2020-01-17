@@ -28,6 +28,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <zlib.h>
 #include "modulo.h"
 #include "Organism.h"
 #include "ExpManager.h"
@@ -47,10 +48,11 @@ Organism::Organism(gzFile backup_file)
  *
  * @param backup_file : where to the save the organism
  */
-void Organism::save(gzFile backup_file) const {
-    gzwrite(backup_file, &indiv_id_, sizeof(indiv_id_));
+void Organism::save(gzFile backup_file, int nb_indivs_) const {
+    int indiv_id = global_id_ % nb_indivs_;
+    gzwrite(backup_file, &indiv_id, sizeof(indiv_id));
     gzwrite(backup_file, &parent_id_, sizeof(parent_id_));
-    gzwrite(backup_file, &global_id, sizeof(global_id));
+    gzwrite(backup_file, &global_id_, sizeof(global_id_));
 
     gzwrite(backup_file, &parent_length_, sizeof(parent_length_));
 
@@ -63,9 +65,10 @@ void Organism::save(gzFile backup_file) const {
  * @param backup_file : from where restore the organism
  */
 void Organism::load(gzFile backup_file) {
-    gzread(backup_file, &indiv_id_, sizeof(indiv_id_));
+    int indiv_id;
+    gzread(backup_file, &indiv_id, sizeof(indiv_id));
     gzread(backup_file, &parent_id_, sizeof(parent_id_));
-    gzread(backup_file, &global_id, sizeof(global_id));
+    gzread(backup_file, &global_id_, sizeof(global_id_));
 
     gzread(backup_file, &parent_length_, sizeof(parent_length_));
 
@@ -800,12 +803,7 @@ void Organism::compute_fitness(double selection_pressure, double* target) {
 */
 
 
-/**
- * From the phenotype of an organism, compute its metabolic error and fitness
- *
- * @param selection_pressure : Selection pressure used during the selection process
- */
-void Organism::compute_fitness(double selection_pressure, double* target) {
+void Organism::compute_phenotype_fitness(double selection_pressure, double* target) {
     double activ_phenotype[300]{};
     double inhib_phenotype[300]{};
 

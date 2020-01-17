@@ -52,12 +52,12 @@ public:
  *
  * @param rng : random generator
  * @param length : Length of the generated random DNA
- * @param indiv_id : Unique Identification Number
+// * @param indiv_id : Unique Identification Number
  */
-Organism(Threefry::Gen&& rng, int length, int indiv_id)
+Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
 , parent_length_(length)
-, indiv_id_(indiv_id)
+//, indiv_id_(indiv_id)
 {
 }
 
@@ -66,12 +66,12 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
  *
  * @param length : Length of the generated random DNA
  * @param genome : Genome to assign to the organism
- * @param indiv_id : Unique Identification Number
+// * @param indiv_id : Unique Identification Number
  */
-/*Organism(int length, char *genome, int indiv_id)
+/*Organism(int length, char *genome)
 : parent_length_(length)
 , dna_(length, genome)
-, indiv_id_(indiv_id)
+//, indiv_id_(indiv_id)
 {
 }*/
 
@@ -98,7 +98,7 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     ~Organism() = default;
 
-    void save(gzFile backup_file) const;
+    void save(gzFile backup_file, int nb_indivs_) const;
     void load(gzFile backup_file);
 
     inline int length() const { return dna_.length(); };
@@ -112,8 +112,9 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
     void compute_protein();
     void translate_protein(double w_max);
 
-    inline void compute_phenotype() { } // void compute_phenotype();
-    void compute_fitness(double selection_pressure, double* target);
+    // void compute_phenotype();
+    // void compute_fitness(double selection_pressure, double* target);
+    void compute_phenotype_fitness(double selection_pressure, double* target);
 
     void reset_mutation_stats();
     void compute_protein_stats();
@@ -133,12 +134,11 @@ public:
     Dna dna_;
     int parent_length_;
 
-    int indiv_id_;
+    // int indiv_id_;
     int parent_id_;
+    int global_id_; // = -1;
 
-    int global_id = -1;
-
-    int usage_count_ = 1;
+    // int usage_count_ = 1;
 
     // Stats
     // int nb_genes_activ = 0;
