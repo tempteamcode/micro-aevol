@@ -624,6 +624,8 @@ void ExpManager::compute_RNA(int indiv_id) {
     }
 }
 
+#include <bitset>
+
 /**
  * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
  *
@@ -632,7 +634,7 @@ void ExpManager::compute_RNA(int indiv_id) {
 void ExpManager::start_protein(int indiv_id) {
     for (int rna_idx = 0; rna_idx < internal_organisms_[indiv_id]->rna_count_; rna_idx++) {
         int c_pos = internal_organisms_[indiv_id]->rnas[rna_idx]->begin;
-
+/*
         if (internal_organisms_[indiv_id]->rnas[rna_idx]->length >= 22) {
             c_pos += 22;
             c_pos = c_pos >= internal_organisms_[indiv_id]->length()
@@ -650,6 +652,27 @@ void ExpManager::start_protein(int indiv_id) {
                         ? c_pos - internal_organisms_[indiv_id]->length()
                         : c_pos;
             }
+        }
+*/
+
+        const int_t SHINE_PART1 = (SHINE_DAL_SEQ&0b111111000)>>3;
+        const int_t SHINE_PART2 = (SHINE_DAL_SEQ&0b000000111);
+
+        const int_t SHINE_DAL_BITS = (SHINE_PART1<<7) | SHINE_PART2;
+        const int_t SHINE_DAL_MASK = 0b1111110000000 | 0b0000000000111;
+
+        Organism& organism = *(internal_organisms_[indiv_id].get());
+        int c_len = internal_organisms_[indiv_id]->rnas[rna_idx]->length;
+        if (c_len > PROM_SEQ_LEN) {
+            c_pos += PROM_SEQ_LEN;
+            if (c_pos >= internal_organisms_[indiv_id]->length()) c_pos -= internal_organisms_[indiv_id]->length();
+            
+            internal_organisms_[indiv_id]->dna_->seq_.forSequences(c_pos, c_len - PROM_SEQ_LEN, 13, [&] (size_t pos_plus_len, int_t sequence) {
+                if ((sequence & SHINE_DAL_MASK) == SHINE_DAL_BITS) {
+                    int dna_pos = pos_plus_len < 13 ? organism.length() + pos_plus_len - 13 : pos_plus_len - 13;
+                    internal_organisms_[indiv_id]->rnas[rna_idx]->start_prot.push_back(dna_pos);
+                }
+            });
         }
     }
 }
