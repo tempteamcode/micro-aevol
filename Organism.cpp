@@ -28,24 +28,9 @@
 
 #include <cmath>
 #include <cstring>
+#include "modulo.h"
 #include "Organism.h"
 #include "ExpManager.h"
-
-#include <iostream>
-
-using namespace std;
-
-/**
- * Constructor to create a clone of a given Organism
- *
- * @param other : The organism to clone
- */
-Organism::Organism(const Organism& other)
-: parent_length_(other.length())
-, dna_(other.dna_)
-, promoters_(other.promoters_)
-{
-}
 
 /**
  * Create an Organism from a backup/checkpointing file
@@ -96,8 +81,8 @@ void Organism::reset_mutation_stats() {
 }
 
 void Organism::compute_protein_stats() {
-    nb_genes_activ = 0;
-    nb_genes_inhib = 0;
+    // nb_genes_activ = 0;
+    // nb_genes_inhib = 0;
     nb_func_genes = 0;
     nb_non_func_genes = 0;
     nb_coding_RNAs = 0;
@@ -116,11 +101,13 @@ void Organism::compute_protein_stats() {
         } else {
             nb_non_func_genes++;
         }
+/*
         if (protein.h > 0) {
             nb_genes_activ++;
         } else {
             nb_genes_inhib++;
         }
+*/
     }
 }
 

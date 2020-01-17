@@ -44,6 +44,7 @@
 /**
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
  */
+
 class Organism {
 
 public:
@@ -56,7 +57,6 @@ public:
  * @param indiv_id : Unique Identification Number
  */
 Organism(Threefry::Gen&& rng, int length, int indiv_id)
-//: rna_count_(0)
 : dna_(length, std::move(rng))
 , parent_length_(length)
 , indiv_id_(indiv_id)
@@ -71,14 +71,27 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
  * @param indiv_id : Unique Identification Number
  */
 /*Organism(int length, char *genome, int indiv_id)
-//: rna_count_(0)
 : parent_length_(length)
 , dna_(length, genome)
 , indiv_id_(indiv_id)
 {
 }*/
 
-    Organism(const Organism& other);
+/*
+    inline Organism clone() const
+    {
+        return Organism(length, dna_, promoters_);
+    }
+
+    inline Organism child() const
+*/
+
+    inline Organism(const Organism& other)
+    : parent_length_(other.length())
+    , dna_(other.dna_)
+    , promoters_(other.promoters_)
+    {
+    }
 
     inline Organism(Organism&& other)
     : parent_length_(other.length())
@@ -134,8 +147,8 @@ public:
     int usage_count_ = 1;
 
     // Stats
-    int nb_genes_activ = 0;
-    int nb_genes_inhib = 0;
+    // int nb_genes_activ = 0;
+    // int nb_genes_inhib = 0;
     int nb_func_genes = 0;
     int nb_non_func_genes = 0;
     int nb_coding_RNAs = 0;
@@ -171,25 +184,6 @@ private:
 
     void add_new_promoter(int32_t position, int8_t error);
 
-    inline int32_t mod(int32_t a, int32_t b) {
-        assert(b > 0);
-
-        while (a < 0) a += b;
-        while (a >= b) a -= b;
-
-        return a;
-        //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
-    }
-
-    inline int64_t mod(int64_t a, int64_t b) {
-        assert(b > 0);
-
-        while (a < 0) a += b;
-        while (a >= b) a -= b;
-
-        return a;
-        //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
-    }
 };
 
 
