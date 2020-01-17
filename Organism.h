@@ -39,8 +39,6 @@
 #include "Protein.h"
 #include "Dna.h"
 
-//class ExpManager;
-
 /**
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
  */
@@ -77,28 +75,24 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 {
 }*/
 
-/*
-    inline Organism clone() const
-    {
-        return Organism(length, dna_, promoters_);
-    }
 
-    inline Organism child() const
-*/
+    Organism(const Organism& other) = delete;
+    Organism(Organism&& other) = delete;
 
-    inline Organism(const Organism& other)
+    inline Organism(const Organism& other, int)
     : parent_length_(other.length())
     , dna_(other.dna_)
     , promoters_(other.promoters_)
     {
     }
 
-    inline Organism(Organism&& other)
+    inline Organism(Organism&& other, int)
     : parent_length_(other.length())
     , dna_(std::move(other.dna_))
     , promoters_(std::move(other.promoters_))
     {
     }
+
 
     Organism(gzFile backup_file);
 

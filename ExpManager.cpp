@@ -143,7 +143,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         double r_compare = round((indiv.metaerror - geometric_area_) * 1E10) / 1E10;
         if (!(r_compare >= 0))
         {
-            internal_organisms_[0] = std::make_shared<Organism>(std::move(indiv));
+            internal_organisms_[0] = std::make_shared<Organism>(std::move(indiv), 0);
             break;
         }
     }
@@ -153,7 +153,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     // Create a population of clones based on the randomly generated organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(*(internal_organisms_[0].get()));
+                std::make_shared<Organism>(*(internal_organisms_[0].get()), 0);
         internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
         internal_organisms_[indiv_id]->parent_id_ = 0;
         internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
@@ -348,7 +348,7 @@ void ExpManager::prepare_mutation(int indiv_id) {
     dna_mutator_array_[indiv_id]->generate_mutations();
 
     if (dna_mutator_array_[indiv_id]->hasMutate()) {
-        internal_organisms_[indiv_id] = std::make_shared<Organism>(*(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()));
+        internal_organisms_[indiv_id] = std::make_shared<Organism>(*(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()), 0);
 
         internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
         internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
