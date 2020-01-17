@@ -18,22 +18,51 @@ constexpr const char* PROTEIN_END = "001"; // CODON_STOP
 
 class Dna {
 public:
-  Dna() = default;
+  inline Dna() : len_(0), seq_(nullptr) { }
 
-  Dna(const Dna& other) = default;
+  inline Dna(const Dna& other) : len_(other.len_), seq_(other.len_ > 0 ? new char[other.len_] : nullptr) { if (len_ > 0) std::memcpy(seq_, other.seq_, len_); }
 
-  inline Dna(int length) : seq_(length) { }
+  inline Dna(Dna&& other) : len_(other.len_), seq_(other.seq_) { other.len_ = 0; other.seq_ = nullptr; }
 
-  // inline Dna(int length, char* genome) : seq_(length) { strcpy(seq_.data(), genome); }
+  Dna& operator=(const Dna& other)
+  {
+    if (&other == this) return *this;
+    if (len_ > 0) delete[] seq_;
+    if ((len_ = other.len_) > 0)
+    {
+      seq_ = new char[len_];
+      std::memcpy(seq_, other.seq_, len_);
+    }
+    else
+    {
+      seq_ = nullptr;
+    }
+    return *this;
+  }
+
+  Dna& operator=(Dna&& other)
+  {
+    if (&other == this) return *this;
+    if (len_ > 0) delete[] seq_;
+    len_ = other.len_; other.len_ = 0;
+    seq_ = other.seq_; other.seq_ = nullptr;
+    return *this;
+  }
+
+  inline Dna(int length) : len_(length), seq_(new char[length]) { }
+
+  // inline Dna(int length, char* sequence) : len_(length), seq_(new char[length]) { std::memcpy(seq_, sequence, length); }
+
+  inline Dna(int length, char* sequence) : len_(length), seq_(sequence) { }
 
   Dna(int length, Threefry::Gen&& rng);
 
-  ~Dna() = default;
+  inline ~Dna() { if (len_ > 0) delete[] seq_; }
 
-  inline int length() const { return seq_.size(); };
+  inline int length() const { return len_; }
+  inline const char* data() const { return seq_; }
 
   void save(gzFile backup_file) const;
-  void load(gzFile backup_file);
 
   inline void do_switch(int pos) {
     if (seq_[pos] == '0')
@@ -52,7 +81,18 @@ public:
 
   int codon_at(int pos);
 
-public:
-  std::vector<char> seq_; // accessed in Algorithms.cu
+private:
+  int len_;
+  char* seq_;
 };
+
+inline Dna Dna_load(gzFile backup_file) {
+  int length;
+  gzread(backup_file, &length, sizeof(length));
+
+  char* seq = new char[length];
+  gzread(backup_file, seq, length * sizeof(seq[0]));
+
+  return Dna(length, std::move(seq));
+}
 

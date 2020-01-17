@@ -50,16 +50,16 @@ void transfer_in(ExpManager* exp_m, bool first_gen) {
   global_dna_size = 0;
   for (int i = 0; i < exp_m->nb_indivs_; i++) {
     host_dna_offset[i] = global_dna_size;
-    global_dna_size += exp_m->internal_organisms_[i]->dna_.seq_.size();
+    global_dna_size += exp_m->internal_organisms_[i]->dna_.length();
     host_max_dna_size =
-        host_max_dna_size < exp_m->internal_organisms_[i]->dna_.seq_.size() ?
-        exp_m->internal_organisms_[i]->dna_.seq_.size() : host_max_dna_size;
-    host_dna_size[i] = exp_m->internal_organisms_[i]->dna_.seq_.size();
+        host_max_dna_size < exp_m->internal_organisms_[i]->dna_.length() ?
+        exp_m->internal_organisms_[i]->dna_.length() : host_max_dna_size;
+    host_dna_size[i] = exp_m->internal_organisms_[i]->dna_.length();
   }
 
   // Create shorthands
-  auto seq0 = exp_m->internal_organisms_[0]->dna_.seq_.data();
-  auto len0 = exp_m->internal_organisms_[0]->dna_.seq_.size();
+  auto seq0 = exp_m->internal_organisms_[0]->dna_.data();
+  auto len0 = exp_m->internal_organisms_[0]->dna_.length();
 
     allocated_global_dna_size = global_dna_size*5;
 

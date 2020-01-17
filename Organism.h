@@ -80,6 +80,13 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     Organism(const Organism& other);
 
+    inline Organism(Organism&& other)
+    : parent_length_(other.length())
+    , dna_(std::move(other.dna_))
+    , promoters_(std::move(other.promoters_))
+    {
+    }
+
     Organism(gzFile backup_file);
 
     ~Organism() = default;

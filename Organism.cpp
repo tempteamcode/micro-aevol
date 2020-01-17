@@ -38,10 +38,9 @@ using namespace std;
 /**
  * Constructor to create a clone of a given Organism
  *
- * @param clone : The organism to clone
+ * @param other : The organism to clone
  */
 Organism::Organism(const Organism& other)
-//: rna_count_(0)
 : parent_length_(other.length())
 , dna_(other.dna_)
 , promoters_(other.promoters_)
@@ -54,7 +53,6 @@ Organism::Organism(const Organism& other)
  * @param backup_file : gzFile to read from
  */
 Organism::Organism(gzFile backup_file)
-//: rna_count_(0)
 {
     load(backup_file);
 }
@@ -86,8 +84,7 @@ void Organism::load(gzFile backup_file) {
 
     gzread(backup_file, &parent_length_, sizeof(parent_length_));
 
-    dna_ = Dna();
-    dna_.load(backup_file);
+    dna_ = Dna_load(backup_file);
 }
 
 /**
