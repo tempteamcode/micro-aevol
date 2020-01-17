@@ -75,14 +75,6 @@ void Organism::load(gzFile backup_file) {
     dna_ = Dna_load(backup_file);
 }
 
-/**
- * Reset the stats variable (used when an organism is a perfect clone of its parent, it means no mutation)
- */
-void Organism::reset_mutation_stats() {
-    nb_swi_ = 0;
-    nb_mut_ = 0;
-}
-
 void Organism::compute_protein_stats() {
     // nb_genes_activ = 0;
     // nb_genes_inhib = 0;

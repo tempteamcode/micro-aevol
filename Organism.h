@@ -116,7 +116,10 @@ Organism(Threefry::Gen&& rng, int length)
     // void compute_fitness(double selection_pressure, double* target);
     void compute_phenotype_fitness(double selection_pressure, double* target);
 
-    void reset_mutation_stats();
+/**
+ * Reset the stats variable (used when an organism is a perfect clone of its parent, it means no mutation)
+ */
+inline void reset_mutation_stats() { nb_swi_ = 0; nb_mut_ = 0; }
     void compute_protein_stats();
 
 private:
@@ -132,24 +135,23 @@ public:
     double metaerror;
 
     Dna dna_;
-    int parent_length_;
 
     // int indiv_id_;
     int parent_id_;
-    int global_id_; // = -1;
+    int global_id_;
+    int parent_length_;
 
     // int usage_count_ = 1;
 
     // Stats
-    // int nb_genes_activ = 0;
-    // int nb_genes_inhib = 0;
-    int nb_func_genes = 0;
-    int nb_non_func_genes = 0;
-    int nb_coding_RNAs = 0;
-    int nb_non_coding_RNAs = 0;
-
-    int nb_swi_ = 0;
-    int nb_mut_ = 0;
+    // int nb_genes_activ;
+    // int nb_genes_inhib;
+    int nb_func_genes;
+    int nb_non_func_genes;
+    int nb_coding_RNAs;
+    int nb_non_coding_RNAs;
+    int nb_swi_;
+    int nb_mut_;
 
 private:
     void remove_all_promoters();
