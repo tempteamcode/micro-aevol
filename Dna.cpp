@@ -34,11 +34,7 @@ int Dna::terminator_at(int pos) {
 }
 
 bool Dna::shine_dal_start(int pos) {
-    const int_t first_part_rev = (SHINE_DAL_SEQ_REV&0b000111111);
-    const int_t second_part_rev = (SHINE_DAL_SEQ_REV&0b111000000)>>6;
-
-    return seq_.getSequenceRev(pos, 6) == first_part_rev &&
-           seq_.getSequenceRev(pos+10, 3) == second_part_rev;
+    return (seq_.getSequenceRev(pos, SHINE_DAL_SEQ_LEN) & SHINE_DAL_SEQ_MASK_REV) == SHINE_DAL_SEQ_BITS_REV;
 }
 
 bool Dna::protein_stop(int pos) {
@@ -46,6 +42,6 @@ bool Dna::protein_stop(int pos) {
 }
 
 int Dna::codon_at(int pos) {
-    return seq_.getSequence(pos, CODON_SIZE);
+    return seq_.getSequence(pos, CODON_LEN);
 }
 

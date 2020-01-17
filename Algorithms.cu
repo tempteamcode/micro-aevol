@@ -733,7 +733,7 @@ void translate_proteins( pProtein* protein, size_t* dna_size, char* dna,  size_t
                 value = 0;
                 for (int8_t i = 0; i < 3; i++) {
                     t_pos = c_pos + i >= dna_size[indiv_id] ? c_pos + i - dna_size[indiv_id] : c_pos + i;
-                    if (dna[dna_offset[indiv_id]+t_pos] == '1') value += 1 << (CODON_SIZE - i - 1);
+                    if (dna[dna_offset[indiv_id]+t_pos] == '1') value += 1 << (CODON_LEN - i - 1);
                 }
                 codon_list[codon_idx] = value;
                 codon_idx++;

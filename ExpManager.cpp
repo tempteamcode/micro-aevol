@@ -655,21 +655,15 @@ void ExpManager::start_protein(int indiv_id) {
         }
 */
 
-        const int_t SHINE_PART1 = (SHINE_DAL_SEQ&0b111111000)>>3;
-        const int_t SHINE_PART2 = (SHINE_DAL_SEQ&0b000000111);
-
-        const int_t SHINE_DAL_BITS = (SHINE_PART1<<7) | SHINE_PART2;
-        const int_t SHINE_DAL_MASK = 0b1111110000000 | 0b0000000000111;
-
         Organism& organism = *(internal_organisms_[indiv_id].get());
         int c_len = internal_organisms_[indiv_id]->rnas[rna_idx]->length;
         if (c_len > PROM_SEQ_LEN) {
             c_pos += PROM_SEQ_LEN;
             if (c_pos >= internal_organisms_[indiv_id]->length()) c_pos -= internal_organisms_[indiv_id]->length();
             
-            internal_organisms_[indiv_id]->dna_->seq_.forSequences(c_pos, c_len - PROM_SEQ_LEN, 13, [&] (size_t pos_plus_len, int_t sequence) {
-                if ((sequence & SHINE_DAL_MASK) == SHINE_DAL_BITS) {
-                    int dna_pos = pos_plus_len < 13 ? organism.length() + pos_plus_len - 13 : pos_plus_len - 13;
+            internal_organisms_[indiv_id]->dna_->seq_.forSequences(c_pos, c_len - PROM_SEQ_LEN, SHINE_DAL_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+                if ((sequence & SHINE_DAL_SEQ_MASK) == SHINE_DAL_SEQ_BITS) {
+                    int dna_pos = pos_plus_len < SHINE_DAL_SEQ_LEN ? organism.length() + pos_plus_len - SHINE_DAL_SEQ_LEN : pos_plus_len - SHINE_DAL_SEQ_LEN;
                     internal_organisms_[indiv_id]->rnas[rna_idx]->start_prot.push_back(dna_pos);
                 }
             });
