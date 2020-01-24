@@ -93,9 +93,9 @@ class ExpManager {
 
         void apply_mutation(int indiv_id);
 
-        std::shared_ptr<Organism>* internal_organisms_;
-        std::shared_ptr<Organism>* prev_internal_organisms_;
-        std::shared_ptr<Organism> best_indiv;
+        Organism** internal_organisms_;
+        Organism** prev_internal_organisms_;
+        Organism* best_indiv;
 
         int* next_generation_reproducer_;
 private:

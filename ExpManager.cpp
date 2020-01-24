@@ -78,11 +78,11 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     w_max_ = w_max;
     selection_pressure_ = selection_pressure;
 
-    internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
-    prev_internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
+    internal_organisms_ = new Organism*[nb_indivs_];
+    prev_internal_organisms_ = new Organism*[nb_indivs_];
 
     next_generation_reproducer_ = new int[nb_indivs_]();
-    dna_mutator_array_ = new DnaMutator *[nb_indivs_];
+    dna_mutator_array_ = new DnaMutator*[nb_indivs_];
 
     mutation_rate_ = mutation_rate;
 
@@ -142,7 +142,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         double r_compare = round((indiv.metaerror - geometric_area_) * 1E10) / 1E10;
         if (!(r_compare >= 0))
         {
-            internal_organisms_[0] = std::make_shared<Organism>(std::move(indiv), 0);
+            internal_organisms_[0] = new Organism(std::move(indiv), 0);
             break;
         }
     }
@@ -152,8 +152,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     int global_id = AeTime::time() * nb_indivs_;
     // Create a population of clones based on the randomly generated organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(*(internal_organisms_[0].get()), 0);
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*(internal_organisms_[0]), 0);
         // internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
         internal_organisms_[indiv_id]->parent_id_ = 0;
         internal_organisms_[indiv_id]->global_id_ = global_id++;
@@ -302,8 +301,8 @@ void ExpManager::load(int t) {
 
     gzread(exp_backup_file, &nb_indivs_, sizeof(nb_indivs_));
 
-    internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
-    prev_internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
+    internal_organisms_ = new Organism*[nb_indivs_];
+    prev_internal_organisms_ = new Organism*[nb_indivs_];
 
     // No need to save/load this field from the backup because it will be set at selection()
     next_generation_reproducer_ = new int[nb_indivs_]();
@@ -322,8 +321,7 @@ void ExpManager::load(int t) {
     }
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(exp_backup_file);
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(exp_backup_file);
         // promoters have to be recomputed, they are not save in the backup
         internal_organisms_[indiv_id]->start_stop_RNA();
     }
@@ -347,18 +345,19 @@ void ExpManager::prepare_mutation(int indiv_id) {
             mutation_rate_, indiv_id);
     dna_mutator_array_[indiv_id]->generate_mutations();
 
+    int parent_id = next_generation_reproducer_[indiv_id];
+    Organism* parent = prev_internal_organisms_[parent_id];
+
     if (dna_mutator_array_[indiv_id]->hasMutate()) {
-        internal_organisms_[indiv_id] = std::make_shared<Organism>(*(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()), 0);
+        internal_organisms_[indiv_id] = new Organism(*parent, 0);
 
         internal_organisms_[indiv_id]->global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
         // internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
-        internal_organisms_[indiv_id]->parent_id_ = next_generation_reproducer_[indiv_id];
+        internal_organisms_[indiv_id]->parent_id_ = parent_id;
     } else {
-        int parent_id = next_generation_reproducer_[indiv_id];
+        internal_organisms_[indiv_id] = parent;
 
-        internal_organisms_[indiv_id] = prev_internal_organisms_[parent_id];
-
-        // internal_organisms_[indiv_id]->usage_count_++;
+        internal_organisms_[indiv_id]->usage_count_++;
         internal_organisms_[indiv_id]->reset_mutation_stats();
     }
 }
@@ -400,7 +399,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
         prepare_mutation(indiv_id);
 
         if (dna_mutator_array_[indiv_id]->hasMutate()) {
-            Organism& indiv = (*internal_organisms_[indiv_id].get());
+            Organism& indiv = (*internal_organisms_[indiv_id]);
             apply_mutation(indiv_id);
             indiv.opt_prom_compute_RNA();
             indiv.start_protein();
@@ -412,6 +411,8 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+        if (--prev_internal_organisms_[indiv_id]->usage_count_ == 0) delete prev_internal_organisms_[indiv_id];
+
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
         internal_organisms_[indiv_id] = nullptr;
     }
@@ -443,7 +444,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             prev_internal_organisms_[indiv_id]->compute_protein_stats();
     }
 
-    stats_best.compute_best(*(best_indiv.get()));
+    stats_best.compute_best(*(best_indiv));
     stats_mean.compute_average(prev_internal_organisms_, nb_indivs_);
 
     stats_best.write_best();
@@ -504,7 +505,7 @@ void ExpManager::selection(int indiv_id) {
  */
 void ExpManager::run_evolution(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        Organism& indiv = (*internal_organisms_[indiv_id].get());
+        Organism& indiv = (*internal_organisms_[indiv_id]);
         
         // dna_mutator_array_ is set only to have has_mutate() true so that RNA, protein and phenotype will be computed
         // dna_mutator_array_[indiv_id] = nullptr;
@@ -553,7 +554,7 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
   cout << "Transfer done in " << duration_transfer_in << endl;
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        Organism& indiv = (*internal_organisms_[indiv_id].get());
+        Organism& indiv = (*internal_organisms_[indiv_id]);
 
         delete dna_mutator_array_[indiv_id];
         dna_mutator_array_[indiv_id] = new DnaMutator(

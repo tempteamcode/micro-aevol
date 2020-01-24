@@ -56,7 +56,7 @@ public:
     }
 
     void compute_best(const Organism& best_indiv);
-    void compute_average(const std::shared_ptr<Organism>* organisms, int pop_size_);
+    void compute_average(const Organism * const * organisms, int pop_size_);
 
     void write_best();
     void write_average();

@@ -149,7 +149,7 @@ void Stats::compute_best(const Organism& best_indiv) {
 /**
  * Compute the statistics of the mean of the whole population
  */
-void Stats::compute_average(const std::shared_ptr<Organism>* organisms, int pop_size_) {
+void Stats::compute_average(const Organism * const * organisms, int pop_size_) {
     is_indiv_ = false;
 
     mean_fitness_ = 0;
@@ -164,7 +164,7 @@ void Stats::compute_average(const std::shared_ptr<Organism>* organisms, int pop_
     mean_nb_switch_ = 0;
     
     for (int indiv_id = 0; indiv_id < pop_size_; indiv_id++) {
-        const Organism& indiv = *(organisms[indiv_id].get());
+        const Organism& indiv = *(organisms[indiv_id]);
 
         mean_fitness_ += indiv.fitness;
         mean_metabolic_error_ += indiv.metaerror;

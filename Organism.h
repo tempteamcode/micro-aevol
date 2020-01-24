@@ -33,6 +33,7 @@
 #include <set>
 #include <zlib.h>
 #include <list>
+#include <atomic>
 
 #include "Promoter.h"
 #include "RNA.h"
@@ -141,7 +142,7 @@ public:
     int global_id_;
     int parent_length_;
 
-    // int usage_count_ = 1;
+    std::atomic<int> usage_count_{1};
 
     // Stats
     // int nb_genes_activ;
