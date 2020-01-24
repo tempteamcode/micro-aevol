@@ -140,23 +140,28 @@ void Organism::compute_protein_stats() {
 void Organism::apply_mutation(vector<int> mutation_list) {
     this->mutation_list=mutation_list;
 
-    //TODO : OMP parallel
-    for(int pos : mutation_list){
+    //#pragma omp parallel for
+    //for(int pos : mutation_list){
+    for(int i=0;i<mutation_list.size();i++){
+        int pos = mutation_list[i];
         dna_.do_switch(pos);
 
         // Remove promoters containing the switched base
         bool rem_prom = remove_promoters_around(pos, mod(pos + 1, length()));
-        bool rem_term = remove_terminators_around(pos, mod(pos + 1, length()));
+        //bool rem_term = remove_terminators_around(pos, mod(pos + 1, length()));
 
         // Look for potential new promoters containing the switched base
         if (length() >= PROM_SIZE)
             look_for_new_promoters_around(pos, mod(pos + 1, length()));
 
         // Look for potential new terminators containing the switched base
-        if(length() >= TERM_SIZE)
-            look_for_new_terminators_around(pos, mod(pos + 1, length()));
+        /*if(length() >= TERM_SIZE)
+            look_for_new_terminators_around(pos, mod(pos + 1, length()));*/
 
+        //#pragma omp atomic
         nb_swi_++;
+
+        //#pragma omp atomic
         nb_mut_++;
     }
 
@@ -359,17 +364,23 @@ void Organism::look_for_new_terminators_starting_before(int32_t pos){
 void Organism::start_stop_RNA() {
     if (dna_.length() < PROM_SIZE) return;
 
-    //TODO: OMP parallel
+    //#pragma omp parallel for
     for (int dna_pos = 0; dna_pos < dna_.length(); dna_pos++) {
         int dist_lead = dna_.promoter_at(dna_pos);
         if (dist_lead <= 4) {
-            add_new_promoter(dna_pos, dist_lead);
+            //#pragma omp critical
+            {
+                add_new_promoter(dna_pos, dist_lead);
+            }
         }
 
         // Computing if a terminator exists at that position
         int dist_term_lead = dna_.terminator_at(dna_pos);
         if (dist_term_lead == 4) {
-            terminators.insert(dna_pos);
+            //#pragma omp critical
+            {
+                terminators.insert(dna_pos);
+            }
 	    }
     }
 }

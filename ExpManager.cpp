@@ -397,6 +397,7 @@ void ExpManager::apply_mutation(int indiv_id)
 void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_gen) {
 
     // Running the simulation process for each organism
+    //#pragma omp parallel for
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
 
@@ -422,16 +423,20 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
         }
     }
 
-
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+    /*for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
         internal_organisms_[indiv_id] = nullptr;
-    }
+    }*/
 
     // Search for the best
     double best_fitness = prev_internal_organisms_[0]->fitness;
     int idx_best = 0;
+
+//#pragma omp parallel for reduction(max:best_fitness)
     for (int indiv_id = 1; indiv_id < nb_indivs_; indiv_id++) {
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
+        internal_organisms_[indiv_id] = nullptr;
+
         if (prev_internal_organisms_[indiv_id]->fitness > best_fitness) {
             idx_best = indiv_id;
             best_fitness = prev_internal_organisms_[indiv_id]->fitness;
@@ -518,6 +523,7 @@ void ExpManager::run_evolution(int nb_gen) {
 
     //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+    //#pragma omp parallel for
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         Organism& indiv = (*internal_organisms_[indiv_id].get());
         
@@ -550,8 +556,9 @@ void ExpManager::run_evolution(int nb_gen) {
         run_a_step(w_max_, selection_pressure_, firstGen);
 
         firstGen = false;
-        //printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
+        printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
 
+        //#pragma omp simd
         for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
             delete dna_mutator_array_[indiv_id];
             dna_mutator_array_[indiv_id] = nullptr;
