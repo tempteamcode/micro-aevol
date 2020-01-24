@@ -56,9 +56,11 @@ public:
  */
 Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
-, parent_length_(length)
+// , parent_length_(length)
 //, indiv_id_(indiv_id)
 {
+  //ids_[0] = indiv_id;
+  ids_[3] = length;
 }
 
 /**
@@ -69,10 +71,12 @@ Organism(Threefry::Gen&& rng, int length)
 // * @param indiv_id : Unique Identification Number
  */
 /*Organism(int length, char *genome)
-: parent_length_(length)
-, dna_(length, genome)
+: dna_(length, genome)
+// , parent_length_(length)
 //, indiv_id_(indiv_id)
 {
+  //ids_[0] = indiv_id;
+  ids_[3] = length;
 }*/
 
 
@@ -80,17 +84,19 @@ Organism(Threefry::Gen&& rng, int length)
     Organism(Organism&& other) = delete;
 
     inline Organism(const Organism& other, int)
-    : parent_length_(other.length())
-    , dna_(other.dna_)
+    : dna_(other.dna_)
     , promoters_(other.promoters_)
+    // , parent_length_(other.length())
     {
+      ids_[3] = other.ids_[3];
     }
 
     inline Organism(Organism&& other, int)
-    : parent_length_(other.length())
-    , dna_(std::move(other.dna_))
+    : dna_(std::move(other.dna_))
     , promoters_(std::move(other.promoters_))
+    // , parent_length_(other.length())
     {
+      ids_[3] = other.ids_[3];
     }
 
 
@@ -140,10 +146,11 @@ public:
 
     Dna dna_;
 
-    // int indiv_id_;
-    int parent_id_;
-    int global_id_;
-    int parent_length_;
+    int ids_[4];
+    //int& indiv_id_ = ids_[0];
+    //int& parent_id_ = ids_[1];
+    //int& global_id_ = ids_[2];
+    //int& parent_length_ = ids_[3];
 
     std::atomic<int> usage_count_{1};
 

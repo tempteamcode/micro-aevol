@@ -146,9 +146,9 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     // Create a population of clones based on the randomly generated organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*(internal_organisms_[0]), 0);
-        // internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
-        internal_organisms_[indiv_id]->parent_id_ = 0;
-        internal_organisms_[indiv_id]->global_id_ = global_id++;
+        // internal_organisms_[indiv_id]->ids_[0] = indiv_id; // indiv_id_
+        internal_organisms_[indiv_id]->ids_[1] = 0; // parent_id_
+        internal_organisms_[indiv_id]->ids_[2] = global_id++; // global_id_
     }
 
     // Create backup and stats directory
@@ -234,10 +234,13 @@ void ExpManager::save(int t) const {
 
     gzwrite(exp_backup_file, &mutation_rate_, sizeof(mutation_rate_));
 
+    /*
     for (int i = 0; i < 300; i++) {
         double tmp = target[i];
         gzwrite(exp_backup_file, &tmp, sizeof(tmp));
     }
+    */
+    gzwrite(exp_backup_file, &target[0], 300 * sizeof(target[0]));
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id]->save(exp_backup_file, nb_indivs_);
@@ -340,9 +343,9 @@ bool ExpManager::prepare_mutation(int indiv_id) {
         Organism* child = new Organism(*parent, 0);
         internal_organisms_[indiv_id] = child;
 
-        child->global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
-        // child->indiv_id_ = indiv_id;
-        child->parent_id_ = parent_id;
+        // child->ids_[0] = indiv_id; // indiv_id_
+        child->ids_[1] = parent_id; // parent_id_
+        child->ids_[2] = AeTime::time() * nb_indivs_ + indiv_id; // global_id_
 
         dna_mutator.apply_mutations(*child);
     } else {
