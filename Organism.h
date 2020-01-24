@@ -61,14 +61,12 @@ public:
  * @param length : Length of the generated random DNA
 // * @param indiv_id : Unique Identification Number
  */
-
 Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
-// , parent_length_(length)
-//, indiv_id_(indiv_id)
+// , ids.parent_length_(length)
+//, ids.indiv_id_(indiv_id)
 {
-  //ids_[0] = indiv_id;
-//  ids_[3] = length;
+  ids.parent_length_ = length;
 }
 
 /**
@@ -80,38 +78,41 @@ Organism(Threefry::Gen&& rng, int length)
  */
 /*Organism(int length, char *genome)
 : dna_(length, genome)
-// , parent_length_(length)
-//, indiv_id_(indiv_id)
+// , ids.parent_length_(length)
+//, ids.indiv_id_(indiv_id)
 {
-  //ids_[0] = indiv_id;
-//  ids_[3] = length;
+  ids.parent_length_ = length;
 }*/
 
 
-    /*
     Organism(const Organism& other) = delete;
     Organism(Organism&& other) = delete;
-    */
 
     inline Organism(const Organism& other, int)
     : dna_(other.dna_)
     , promoters_(other.promoters_)
+    //, ids.parent_length_(other.length())
     {
+      ids = other.ids; //!
+      ids.parent_length_ = other.length();
     }
 
     inline Organism(Organism&& other, int)
     : dna_(std::move(other.dna_))
     , promoters_(std::move(other.promoters_))
+    //, ids.parent_length_(other.length())
     {
+      ids = other.ids; //!
+      ids.parent_length_ = other.length();
     }
 
 
-    Organism(gzFile backup_file, OrganismIDs& ids);
+    Organism(gzFile backup_file);
 
     ~Organism() = default;
 
-    void save(gzFile backup_file, const OrganismIDs& ids) const;
-    void load(gzFile backup_file, OrganismIDs& ids);
+    void save(gzFile backup_file, int nb_indivs_) const;
+    void load(gzFile backup_file);
 
     inline int length() const { return dna_.length(); };
 
@@ -152,10 +153,7 @@ public:
 
     Dna dna_;
 
-    //int indiv_id_ = ids_[0];
-    //int parent_id_ = ids_[1];
-    //int global_id_ = ids_[2];
-    //int parent_length_ = ids_[3];
+    OrganismIDs ids;
 
     std::atomic<int> usage_count_{1};
 
