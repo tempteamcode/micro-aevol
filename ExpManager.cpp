@@ -332,9 +332,8 @@ bool ExpManager::prepare_mutation(int indiv_id) {
 
     DnaMutator dna_mutator(
             std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
-            parent->length(),
-            mutation_rate_, indiv_id);
-    dna_mutator.generate_mutations();
+            parent->length(), mutation_rate_
+    );
 
     bool mutations = dna_mutator.hasMutate();
     if (mutations) {
