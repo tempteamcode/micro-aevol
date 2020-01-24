@@ -45,6 +45,7 @@ Organism::Organism(const Organism& other)
 : parent_length_(other.length())
 , dna_(other.dna_)
 , promoters_(other.promoters_)
+//, terminators(other.terminators)
 {
 }
 
@@ -107,6 +108,7 @@ void Organism::compute_protein_stats() {
     nb_non_coding_RNAs = 0;
 
     for (const RNA& rna : rnas) {
+    //for(const RNA* rna : starts_rnas)
         if (rna.is_coding_)
             nb_coding_RNAs++;
         else
@@ -134,56 +136,49 @@ void Organism::compute_protein_stats() {
  * @return
  */
 
-void Organism::apply_mutation(int pos) {
-    dna_.do_switch(pos);
+//void Organism::apply_mutation(int pos) {
+void Organism::apply_mutation(vector<int> mutation_list) {
+    this->mutation_list=mutation_list;
 
-    // Remove promoters containing the switched base
-    remove_promoters_around(pos, mod(pos + 1, length()));
+    //TODO : OMP parallel
+    for(int pos : mutation_list){
+        dna_.do_switch(pos);
 
-    // Look for potential new promoters containing the switched base
-    if (length() >= PROM_SIZE)
-        look_for_new_promoters_around(pos, mod(pos + 1, length()));
+        // Remove promoters containing the switched base
+        bool rem_prom = remove_promoters_around(pos, mod(pos + 1, length()));
+        /*int a = terminators.size();
+        bool rem_term = remove_terminators_around(pos, mod(pos + 1, length()));
+        a = terminators.size();*/
 
-    nb_swi_++;
-    nb_mut_++;
+        // Look for potential new promoters containing the switched base
+        if (length() >= PROM_SIZE)
+            look_for_new_promoters_around(pos, mod(pos + 1, length()));
+
+        // Look for potential new terminators containing the switched base
+        /*if(length() >= TERM_SIZE)
+            look_for_new_terminators_around(pos, mod(pos + 1, length()));*/
+
+        nb_swi_++;
+        nb_mut_++;
+    }
+
+    //cout << "TEST: " << promoters_.size() << " : " << terminators.size() << endl;
 }
 
 
 /**
 Optimize promoters search
  **/
-
-/*
-void Organism::remove_promoters_around(int32_t pos) {
-    if (dna_.length() >= PROM_SIZE) {
-        remove_promoters_starting_between(mod(pos - PROM_SIZE + 1,
-                                              dna_.length()),
-                                          pos);
-    } else {
-        remove_all_promoters();
-    }
-}
-*/
-
-void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
+bool Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
     if (mod(pos_1 - pos_2, dna_.length()) >= PROM_SIZE) {
-        remove_promoters_starting_between(mod(pos_1 - PROM_SIZE + 1,
+        return remove_promoters_starting_between(mod(pos_1 - PROM_SIZE + 1,
                                               dna_.length()),
                                           pos_2);
     } else {
         remove_all_promoters();
+        return true;
     }
 }
-
-/*
-void Organism::look_for_new_promoters_around(int32_t pos) {
-    if (dna_.length() >= PROM_SIZE) {
-        look_for_new_promoters_starting_between(
-                mod(pos - PROM_SIZE + 1, dna_.length()),
-                pos);
-    }
-}
-*/
 
 void Organism::look_for_new_promoters_around(int32_t pos_1, int32_t pos_2) {
     if (dna_.length() >= PROM_SIZE) {
@@ -199,30 +194,29 @@ void Organism::remove_all_promoters() {
 
 /** LEADING promoters **/
 /** REMOVE **/
-void Organism::remove_promoters_starting_between(int32_t pos_1, int32_t pos_2) {
+bool Organism::remove_promoters_starting_between(int32_t pos_1, int32_t pos_2) {
     if (pos_1 > pos_2) {
-        remove_promoters_starting_after(pos_1);
-        remove_promoters_starting_before(pos_2);
+        return remove_promoters_starting_after(pos_1) || remove_promoters_starting_before(pos_2);
     } else {
         // suppression is in [pos1, pos_2[, pos_2 is excluded
+        int init_size = promoters_.size();
         promoters_.erase(promoters_.lower_bound(pos_1), promoters_.upper_bound(pos_2-1));
+        return init_size != promoters_.size();
     }
 }
 
-void Organism::remove_promoters_starting_after(int32_t pos) {
+bool Organism::remove_promoters_starting_after(int32_t pos) {
+    int init_size = promoters_.size();
     promoters_.erase(promoters_.lower_bound(pos), promoters_.end());
+    return init_size != promoters_.size();
 }
 
-void Organism::remove_promoters_starting_before(int32_t pos) {
+bool Organism::remove_promoters_starting_before(int32_t pos) {
     // suppression is in [0, pos[, pos is excluded
+    int init_size = promoters_.size();
     promoters_.erase(promoters_.begin(), promoters_.upper_bound(pos-1));
+    return init_size != promoters_.size();
 }
-
-/*
-void Organism::locate_promoters() {
-    look_for_new_promoters_starting_between(0, dna_.length());
-}
-*/
 
 void Organism::add_new_promoter(int32_t position, int8_t error) {
     // TODO: Insertion should not always occur, especially if promoter become better or worse ?
@@ -275,11 +269,99 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
 
 
 /**
+ * Dealing with terminators
+ */
+void Organism::remove_all_terminators(){
+    terminators.clear();
+}
+
+bool Organism::remove_terminators_around(int32_t pos_1, int32_t pos_2){
+    if (mod(pos_1 - pos_2, dna_.length()) >= TERM_SIZE) {
+        return remove_terminators_starting_between(mod(pos_1 - TERM_SIZE + 1,
+                                              dna_.length()),
+                                          pos_2);
+    } else {
+        remove_all_terminators();
+        return true;
+    }
+}
+
+bool Organism::remove_terminators_starting_between(int32_t pos_1, int32_t pos_2){
+    if (pos_1 > pos_2) {
+        return remove_terminators_starting_after(pos_1) || remove_terminators_starting_before(pos_2);
+    } else {
+        // suppression is in [pos1, pos_2[, pos_2 is excluded
+        int init_size = terminators.size();
+        terminators.erase(terminators.lower_bound(pos_1), terminators.upper_bound(pos_2-1));
+        return init_size != terminators.size();
+    }
+}
+
+bool Organism::remove_terminators_starting_after(int32_t pos){
+    int init_size = terminators.size();
+    terminators.erase(terminators.lower_bound(pos), terminators.end());
+    return init_size != terminators.size();
+}
+
+bool Organism::remove_terminators_starting_before(int32_t pos){
+    int init_size = terminators.size();
+    terminators.erase(terminators.begin(), terminators.upper_bound(pos-1));
+    return init_size != terminators.size();
+}
+
+void Organism::look_for_new_terminators_around(int32_t pos_1, int32_t pos_2){
+    if (dna_.length() >= PROM_SIZE) {
+        look_for_new_terminators_starting_between(
+                mod(pos_1 - TERM_SIZE + 1,
+                    dna_.length()), pos_2);
+    }
+}
+
+void Organism::look_for_new_terminators_starting_between(int32_t pos_1, int32_t pos_2){
+    if (pos_1 >= pos_2) {
+        look_for_new_terminators_starting_after(pos_1);
+        look_for_new_terminators_starting_before(pos_2);
+        return;
+    }
+    // Hamming distance of the sequence from the promoter consensus
+
+    for (int32_t i = pos_1; i < pos_2; i++) {
+        int8_t dist = dna_.terminator_at(i);
+
+        if (dist == 4) { // dist takes the hamming distance of the sequence from the consensus
+            terminators.insert(i);
+        }
+    }
+}
+
+void Organism::look_for_new_terminators_starting_after(int32_t pos){
+    for (int32_t i = pos; i < dna_.length(); i++) {
+        int dist = dna_.terminator_at(i);
+
+        if (dist == 4) { // dist takes the hamming distance of the sequence from the consensus
+            terminators.insert(i);
+        }
+    }
+}
+
+void Organism::look_for_new_terminators_starting_before(int32_t pos){
+    for (int32_t i = 0; i < pos; i++) {
+        int dist = dna_.terminator_at(i);
+
+        if (dist == 4) { // dist takes the hamming distance of the sequence from the consensus
+            terminators.insert(i);
+        }
+    }
+}
+
+
+/**
  * Search for Promoters and Terminators (i.e. beginning and ending of a RNA) within the whole DNA of an Organism
  */
 void Organism::start_stop_RNA() {
     if (dna_.length() < PROM_SIZE) return;
 
+    //TODO: OMP parallel
     for (int dna_pos = 0; dna_pos < dna_.length(); dna_pos++) {
         int dist_lead = dna_.promoter_at(dna_pos);
         if (dist_lead <= 4) {
@@ -382,6 +464,8 @@ void Organism::opt_prom_compute_RNA() {
 
             int32_t rna_length = 0;
 
+            //terminators.insert(cur_pos);
+
             if (prom_pos > rna_end)
                 rna_length = dna_.length() - prom_pos + rna_end;
             else
@@ -397,6 +481,53 @@ void Organism::opt_prom_compute_RNA() {
                     rna_length);
                 //rna_count_++;
             }
+        }
+    }
+}
+
+void Organism::opt_compute_RNA(){
+    proteins.clear();
+    rnas.clear();
+
+    rnas.reserve(promoters_.size());
+
+    set<int>::iterator term = terminators.begin();
+
+    for(const auto &prom_pair: promoters_) {
+        int prom_pos = prom_pair.first;
+
+        int cur_pos = prom_pos + 22;
+        cur_pos = cur_pos >= dna_.length()
+                  ? cur_pos - dna_.length()
+                  : cur_pos;
+
+        while(cur_pos > *term && term != terminators.end())
+            ++term;
+
+        if(term == terminators.end())
+            term = terminators.begin();
+
+        int start_pos = *term;
+
+        int32_t rna_end = start_pos + 10 >= dna_.length()
+                          ? start_pos + 10 - dna_.length()
+                          : start_pos + 10;
+
+        int32_t rna_length = 0;
+
+        if (prom_pos > rna_end)
+            rna_length = dna_.length() - prom_pos + rna_end;
+        else
+            rna_length = rna_end - prom_pos;
+
+        rna_length -= 21;
+
+        if (rna_length > 0) {
+            rnas.emplace_back(
+                    prom_pos,
+                    rna_end,
+                    1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                    rna_length);
         }
     }
 }

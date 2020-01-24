@@ -33,6 +33,7 @@
 #include <set>
 #include <zlib.h>
 #include <list>
+#include <unordered_map>
 
 #include "Promoter.h"
 #include "RNA.h"
@@ -89,7 +90,8 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     inline int length() const { return dna_.length(); };
 
-    void apply_mutation(int pos);
+    //void apply_mutation(int pos);
+    void apply_mutation(std::vector<int> mutation_list);
 
     void start_stop_RNA();
     void compute_RNA();
@@ -104,13 +106,18 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
     void reset_mutation_stats();
     void compute_protein_stats();
 
-private:
+    void opt_compute_RNA();
+
+//private:
     // Map position (int) to Promoter
     std::map<int, Promoter> promoters_;
 
     std::set<int> terminators;
     std::vector<RNA> rnas;
+
     std::vector<Protein> proteins;
+
+    std::vector<int> mutation_list;
 
 public:
     double fitness;
@@ -140,19 +147,13 @@ public:
 private:
     void remove_all_promoters();
 
-    // void remove_promoters_around(int32_t pos);
+    bool remove_promoters_around(int32_t pos_1, int32_t pos_2);
 
-    void remove_promoters_around(int32_t pos_1, int32_t pos_2);
+    bool remove_promoters_starting_between(int32_t pos_1, int32_t pos_2);
 
-    void remove_promoters_starting_between(int32_t pos_1, int32_t pos_2);
+    bool remove_promoters_starting_after(int32_t pos);
 
-    void remove_promoters_starting_after(int32_t pos);
-
-    void remove_promoters_starting_before(int32_t pos);
-
-    // void locate_promoters();
-
-    // void look_for_new_promoters_around(int32_t pos);
+    bool remove_promoters_starting_before(int32_t pos);
 
     void look_for_new_promoters_around(int32_t pos_1, int32_t pos_2);
 
@@ -163,6 +164,24 @@ private:
     void look_for_new_promoters_starting_before(int32_t pos);
 
     void add_new_promoter(int32_t position, int8_t error);
+
+    void remove_all_terminators();
+
+    bool remove_terminators_around(int32_t pos_1, int32_t pos_2);
+
+    bool remove_terminators_starting_between(int32_t pos_1, int32_t pos_2);
+
+    bool remove_terminators_starting_after(int32_t pos);
+
+    bool remove_terminators_starting_before(int32_t pos);
+
+    void look_for_new_terminators_around(int32_t pos_1, int32_t pos_2);
+
+    void look_for_new_terminators_starting_between(int32_t pos_1, int32_t pos_2);
+
+    void look_for_new_terminators_starting_after(int32_t pos);
+
+    void look_for_new_terminators_starting_before(int32_t pos);
 
     inline int32_t mod(int32_t a, int32_t b) {
         assert(b > 0);

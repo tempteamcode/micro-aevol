@@ -40,6 +40,7 @@ constexpr int8_t NB_BASE = 2;
 
 
 constexpr int PROM_SIZE = 22;
+constexpr int TERM_SIZE = 11;
 
 constexpr int8_t CODON_START = 0b000;
 constexpr int8_t CODON_M0    = 0b100;

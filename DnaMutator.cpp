@@ -55,8 +55,9 @@ void DnaMutator::generate_next_mutation(int cpt_mut_) {
 }
 
 void DnaMutator::apply_mutations(Organism& organism) {
-    for (int mutation_pos: mutation_list_) {
+    /*for (int mutation_pos: mutation_list_) {
         organism.apply_mutation(mutation_pos);
-    }
+    }*/
+    organism.apply_mutation(mutation_list_);
 }
 
