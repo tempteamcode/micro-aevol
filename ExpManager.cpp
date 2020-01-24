@@ -82,7 +82,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     prev_internal_organisms_ = new Organism*[nb_indivs_];
 
     next_generation_reproducer_ = new int[nb_indivs_]();
-    dna_mutator_array_ = new DnaMutator*[nb_indivs_];
+    // dna_mutator_array_ = new DnaMutator*[nb_indivs_];
 
     mutation_rate_ = mutation_rate;
 
@@ -181,10 +181,12 @@ ExpManager::ExpManager(int time)
 
     printf("Initialized environmental target %f\n", geometric_area_);
 
+    /*
     dna_mutator_array_ = new DnaMutator *[nb_indivs_];
     for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
         dna_mutator_array_[indiv_id] = nullptr;
     }
+    */
 }
 
 /**
@@ -339,28 +341,33 @@ void ExpManager::load(int t) {
  *
  * @param indiv_id : Organism unique id
  */
-void ExpManager::prepare_mutation(int indiv_id) {
-    dna_mutator_array_[indiv_id] = new DnaMutator(
-            std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
-            prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
-            mutation_rate_, indiv_id);
-    dna_mutator_array_[indiv_id]->generate_mutations();
-
+bool ExpManager::prepare_mutation(int indiv_id) {
     int parent_id = next_generation_reproducer_[indiv_id];
     Organism* parent = prev_internal_organisms_[parent_id];
 
-    if (dna_mutator_array_[indiv_id]->hasMutate()) {
+    DnaMutator dna_mutator(
+            std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
+            parent->length(),
+            mutation_rate_, indiv_id);
+    dna_mutator.generate_mutations();
+
+    bool mutations = dna_mutator.hasMutate();
+    if (mutations) {
         internal_organisms_[indiv_id] = new Organism(*parent, 0);
 
         internal_organisms_[indiv_id]->global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
         // internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
         internal_organisms_[indiv_id]->parent_id_ = parent_id;
+
+        dna_mutator.apply_mutations(*(internal_organisms_[indiv_id]));
     } else {
         internal_organisms_[indiv_id] = parent;
 
         internal_organisms_[indiv_id]->usage_count_++;
         internal_organisms_[indiv_id]->reset_mutation_stats();
     }
+
+    return mutations;
 }
 
 /**
@@ -371,8 +378,8 @@ ExpManager::~ExpManager() {
     for (auto i = 0; i < nb_indivs_; ++i) {
         delete dna_mutator_array_[i];
     }
-    */
     delete[] dna_mutator_array_;
+    */
     delete[] internal_organisms_;
     for (auto i = 0; i < nb_indivs_; ++i) {
         if (--prev_internal_organisms_[i]->usage_count_ == 0) delete prev_internal_organisms_[i];
@@ -382,10 +389,12 @@ ExpManager::~ExpManager() {
     delete[] target;
 }
 
+/*
 void ExpManager::apply_mutation(int indiv_id)
 {
     dna_mutator_array_[indiv_id]->apply_mutations(*(internal_organisms_[indiv_id]));
 }
+*/
 
 /**
  * Execute a generation of the simulation for all the Organisms
@@ -399,17 +408,17 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     // Running the simulation process for each organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
-        prepare_mutation(indiv_id);
-
-        if (dna_mutator_array_[indiv_id]->hasMutate()) {
+        // dna_mutator_array_[indiv_id]->hasMutate()
+        if (prepare_mutation(indiv_id)) {
             Organism& indiv = (*internal_organisms_[indiv_id]);
-            apply_mutation(indiv_id);
+            // apply_mutation(indiv_id);
             indiv.opt_prom_compute_RNA();
             // indiv.start_protein();
             // indiv.compute_protein();
             indiv.compute_proteins();
             indiv.translate_protein(w_max);
             indiv.compute_phenotype_fitness(selection_pressure, target);
+            indiv.compute_protein_stats();
         }
     }
 
@@ -441,11 +450,10 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     if (first_gen) {
         stats_best.prepare();
         stats_mean.prepare();
-    }
 
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        if (first_gen || dna_mutator_array_[indiv_id]->hasMutate())
-            prev_internal_organisms_[indiv_id]->compute_protein_stats();
+		for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+		    prev_internal_organisms_[indiv_id]->compute_protein_stats();
+		}
     }
 
     stats_best.compute_best(*(best_indiv));
@@ -535,12 +543,12 @@ void ExpManager::run_evolution(int nb_gen) {
 
         firstGen = false;
         printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
-
+        /*
         for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
             delete dna_mutator_array_[indiv_id];
             // dna_mutator_array_[indiv_id] = nullptr;
         }
-
+        */
         if (AeTime::time() % backup_step_ == 0) {
             save(AeTime::time());
             cout << "Backup for generation " << AeTime::time() << " done !" << endl;
@@ -561,11 +569,13 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         Organism& indiv = (*internal_organisms_[indiv_id]);
 
-        delete dna_mutator_array_[indiv_id];
+        /*
+        // delete dna_mutator_array_[indiv_id];
         dna_mutator_array_[indiv_id] = new DnaMutator(
                 std::move(rng_.gen(indiv_id, Threefry::MUTATION)),
                 prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
                 mutation_rate_, indiv_id);
+        */
 
         indiv.opt_prom_compute_RNA();
         //indiv.compute_RNA();

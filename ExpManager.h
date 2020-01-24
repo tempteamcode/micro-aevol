@@ -88,7 +88,7 @@ class ExpManager {
 
         void run_a_step(double w_max, double selection_pressure, bool first_gen);
 
-        void prepare_mutation(int indiv_id);
+        bool prepare_mutation(int indiv_id);
         void selection(int indiv_id);
 
         void apply_mutation(int indiv_id);
@@ -99,7 +99,7 @@ class ExpManager {
 
         int* next_generation_reproducer_;
 private:
-        DnaMutator** dna_mutator_array_;
+        // DnaMutator** dna_mutator_array_;
 
 public: // used in Algorithms.cu
         int nb_indivs_;
