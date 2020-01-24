@@ -57,9 +57,15 @@ constexpr double H_MIN = -1.0;
 constexpr double H_MAX = 1.0;
 constexpr double W_MIN = 0.0;
 
-#include "Organism.h"
-//class Organism;
+class Organism;
 class Stats;
+
+struct OrganismIDs {
+    int indiv_id_;
+    int parent_id_;
+    int global_id_;
+    int parent_length_;
+};
 
 
 /**
@@ -96,10 +102,8 @@ class ExpManager {
 
         Organism** internal_organisms_;
         Organism** prev_internal_organisms_;
-        /*
         OrganismIDs* internal_ids_;
         OrganismIDs* prev_internal_ids_;
-        */
         Organism* best_indiv;
 
         int* next_generation_reproducer_;
