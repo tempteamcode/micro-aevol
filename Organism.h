@@ -35,7 +35,6 @@
 #include <list>
 #include <atomic>
 
-#include "Promoter.h"
 #include "RNA.h"
 #include "Protein.h"
 #include "Dna.h"
