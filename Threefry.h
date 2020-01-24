@@ -22,7 +22,8 @@ public:
 
 	enum Phase {REPROD = 0, MUTATION = 1, NPHASES};
 
-    Threefry() = default;
+    Threefry() = default; // used in ExpManager::ExpManager(int)
+
 	Threefry(int X, int Y, unsigned int seed) : counters_(X*Y*NPHASES, 0), X_(X), Y_(Y), N_(X*Y) {
 		seed_[0] = 0;
 		seed_[1] = seed;

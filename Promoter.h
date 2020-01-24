@@ -30,24 +30,13 @@
 #define PDC_MINI_AEVOL_PROMOTER_H
 
 /**
- * Class to store a promoter located on the DNA of an Organism
+ * Struct to store a promoter located on the DNA of an Organism
  */
-class Promoter {
-public:
-
-    //necessary to use them in std::map
-    Promoter() = default;
+struct Promoter {
+    Promoter() = default; // used in std::map
 
     Promoter(int t_pos, int t_error) {
         pos = t_pos; error = t_error;
-    }
-
-    Promoter(const Promoter& clone) {
-        pos=clone.pos;error=clone.error;
-    }
-
-    Promoter(Promoter* clone) {
-        pos=clone->pos;error=clone->error;
     }
 
     int pos = -1;

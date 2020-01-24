@@ -109,8 +109,12 @@ Organism(Threefry::Gen&& rng, int length)
     void start_stop_RNA();
     void compute_RNA();
     void opt_prom_compute_RNA();
-    void start_protein();
-    void compute_protein();
+    //void start_protein();
+    //void compute_protein();
+    void compute_proteins();
+private:
+    void compute_protein(RNA& rna, int protein_start);
+public:
     void translate_protein(double w_max);
 
     // void compute_phenotype();

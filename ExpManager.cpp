@@ -132,8 +132,9 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         indiv.start_stop_RNA();
         indiv.compute_RNA();
 
-        indiv.start_protein();
-        indiv.compute_protein();
+        // indiv.start_protein();
+        // indiv.compute_protein();
+        indiv.compute_proteins();
 
         indiv.translate_protein(w_max);
 
@@ -404,8 +405,9 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             Organism& indiv = (*internal_organisms_[indiv_id]);
             apply_mutation(indiv_id);
             indiv.opt_prom_compute_RNA();
-            indiv.start_protein();
-            indiv.compute_protein();
+            // indiv.start_protein();
+            // indiv.compute_protein();
+            indiv.compute_proteins();
             indiv.translate_protein(w_max);
             indiv.compute_phenotype_fitness(selection_pressure, target);
         }
@@ -514,8 +516,9 @@ void ExpManager::run_evolution(int nb_gen) {
 
         indiv.opt_prom_compute_RNA();
 
-        indiv.start_protein();
-        indiv.compute_protein();
+        // indiv.start_protein();
+        // indiv.compute_protein();
+        indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);
 
@@ -567,8 +570,9 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
         indiv.opt_prom_compute_RNA();
         //indiv.compute_RNA();
 
-        indiv.start_protein();
-        indiv.compute_protein();
+        // indiv.start_protein();
+        // indiv.compute_protein();
+        indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);
 

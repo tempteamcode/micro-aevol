@@ -383,6 +383,7 @@ void Organism::opt_prom_compute_RNA() {
 /**
  * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
  */
+/*
 void Organism::start_protein() {
     for (RNA& rna : rnas) {
         if (rna.length < 22) continue;
@@ -404,10 +405,12 @@ void Organism::start_protein() {
         }
     }
 }
+*/
 
 /**
  * Compute the list of genes/proteins of an Organism
  */
+/*
 void Organism::compute_protein() {
     int resize_to = 0;
     for (const RNA& rna : rnas) {
@@ -475,6 +478,92 @@ void Organism::compute_protein() {
         }
     }
 }
+*/
+
+
+/**
+ * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
+ * Compute the list of genes/proteins of an Organism
+ */
+void Organism::compute_proteins() {
+    proteins.clear();
+
+    for (RNA& rna : rnas) {
+        if (rna.length < 22) continue;
+
+        int c_pos = rna.begin + 22;
+        c_pos = c_pos >= dna_.length()
+                ? c_pos - dna_.length()
+                : c_pos;
+
+        while (c_pos != rna.end) {
+            if (dna_.shine_dal_start(c_pos)) {
+                compute_protein(rna, c_pos);
+            }
+
+            c_pos++;
+            c_pos = c_pos >= dna_.length()
+                    ? c_pos - dna_.length()
+                    : c_pos;
+        }
+    }
+}
+
+void Organism::compute_protein(RNA& rna, int protein_start) {
+    int current_position = protein_start + 13;
+
+    current_position = current_position >= dna_.length()
+                       ? current_position - dna_.length()
+                       : current_position;
+
+    int transcribed_start = rna.begin + 22;
+    transcribed_start = transcribed_start >= dna_.length()
+                        ? transcribed_start - dna_.length()
+                        : transcribed_start;
+
+    int transcription_length;
+    if (transcribed_start <= protein_start) {
+        transcription_length = protein_start - transcribed_start;
+    } else {
+        transcription_length = dna_.length() - transcribed_start + protein_start;
+    }
+    transcription_length += 13;
+
+    while (rna.length - transcription_length >= 3) {
+        if (dna_.protein_stop(current_position)) {
+            int prot_length;
+
+            int protein_end = current_position + 2 >= dna_.length() ?
+                              current_position - dna_.length() + 2 :
+                              current_position + 2;
+
+            if (protein_start + 13 < protein_end) {
+                prot_length = protein_end - (protein_start + 13);
+            } else {
+                prot_length = dna_.length() - (protein_start + 13) + protein_end;
+            }
+
+            if (prot_length >= 3) {
+                proteins.emplace_back
+                                   (protein_start,
+                                    protein_end,
+                                    prot_length,
+                                    rna.e);
+                //protein_count_++;
+
+                rna.is_coding_ = true;
+            }
+            break;
+        }
+
+        current_position += 3;
+        current_position = current_position >= dna_.length()
+                           ? current_position - dna_.length()
+                           : current_position;
+        transcription_length += 3;
+    }
+}
+
 
 /**
  * Compute the pseudo-chimical model (i.e. the width, height and location in the phenotypic space) of a genes/protein
