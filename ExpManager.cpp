@@ -51,6 +51,8 @@ using namespace std;
 
 #include <utility>
 
+long time_mutation = 0;
+
 /**
  * Constructor for initializing a new simulation
  *
@@ -397,15 +399,21 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     // Running the simulation process for each organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
+
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         prepare_mutation(indiv_id);
 
         if (dna_mutator_array_[indiv_id]->hasMutate()) {
             Organism& indiv = (*internal_organisms_[indiv_id].get());
+
             apply_mutation(indiv_id);
             indiv.opt_prom_compute_RNA();
-            //cout << "DBG : " << indiv.promoters_.size() << " : " << indiv.terminators.size() << endl;
-            /*indiv.opt_compute_RNA();
-            indiv.compute_RNA();*/
+            //indiv.opt_compute_RNA();
+            //indiv.compute_RNA();
+
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            time_mutation += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count();
+
             indiv.start_protein();
             indiv.compute_protein();
             indiv.translate_protein(w_max);
@@ -507,6 +515,9 @@ void ExpManager::selection(int indiv_id) {
  * @param nb_gen : Number of generations to simulate
  */
 void ExpManager::run_evolution(int nb_gen) {
+
+    //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         Organism& indiv = (*internal_organisms_[indiv_id].get());
         
@@ -514,8 +525,7 @@ void ExpManager::run_evolution(int nb_gen) {
         dna_mutator_array_[indiv_id] = nullptr;
 
         indiv.opt_prom_compute_RNA();
-
-        //cout << "DBG : " << indiv.promoters_.size() << " : " << indiv.terminators.size() << endl;
+        //indiv.compute_RNA();
 
         indiv.start_protein();
         indiv.compute_protein();
@@ -526,6 +536,10 @@ void ExpManager::run_evolution(int nb_gen) {
 
         indiv.compute_fitness(selection_pressure_, target);
     }
+
+    /*std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Run evolution first part = " << ((double)(std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count())/1000.0) << "[s] <=> " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+*/
 
     printf("Running evolution from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
     bool firstGen = true;
@@ -548,6 +562,8 @@ void ExpManager::run_evolution(int nb_gen) {
             cout << "Backup for generation " << AeTime::time() << " done !" << endl;
         }
     }
+
+    cout << "TOTAL MUTATION TIME: " << time_mutation << "[ns]" << endl;
 }
 
 #ifdef USE_CUDA

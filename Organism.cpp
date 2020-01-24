@@ -146,17 +146,15 @@ void Organism::apply_mutation(vector<int> mutation_list) {
 
         // Remove promoters containing the switched base
         bool rem_prom = remove_promoters_around(pos, mod(pos + 1, length()));
-        /*int a = terminators.size();
         bool rem_term = remove_terminators_around(pos, mod(pos + 1, length()));
-        a = terminators.size();*/
 
         // Look for potential new promoters containing the switched base
         if (length() >= PROM_SIZE)
             look_for_new_promoters_around(pos, mod(pos + 1, length()));
 
         // Look for potential new terminators containing the switched base
-        /*if(length() >= TERM_SIZE)
-            look_for_new_terminators_around(pos, mod(pos + 1, length()));*/
+        if(length() >= TERM_SIZE)
+            look_for_new_terminators_around(pos, mod(pos + 1, length()));
 
         nb_swi_++;
         nb_mut_++;
@@ -463,8 +461,6 @@ void Organism::opt_prom_compute_RNA() {
                               : cur_pos + 10;
 
             int32_t rna_length = 0;
-
-            //terminators.insert(cur_pos);
 
             if (prom_pos > rna_end)
                 rna_length = dna_.length() - prom_pos + rna_end;
