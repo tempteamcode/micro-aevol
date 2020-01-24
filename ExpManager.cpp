@@ -372,8 +372,10 @@ ExpManager::~ExpManager() {
     }
     */
     delete[] dna_mutator_array_;
-
     delete[] internal_organisms_;
+    for (auto i = 0; i < nb_indivs_; ++i) {
+        if (--prev_internal_organisms_[i]->usage_count_ == 0) delete prev_internal_organisms_[i];
+    }
     delete[] prev_internal_organisms_;
     delete[] next_generation_reproducer_;
     delete[] target;
