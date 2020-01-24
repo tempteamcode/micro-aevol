@@ -203,12 +203,14 @@ void Organism::locate_promoters() {
 }
 */
 
+/*
 void Organism::add_new_promoter(int32_t position, int8_t error) {
     // TODO: Insertion should not always occur, especially if promoter become better or worse ?
     // Promoters are deleted anyway if victim of mutation. the IF stays unnecessary
-    if(promoters_.find(position) == promoters_.end())
-        promoters_[position] = Promoter(position, error);
+    if (promoters_.find(position) == promoters_.end())
+        promoters_[position] = error;
 }
+*/
 
 void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t pos_2) {
     // When pos_1 > pos_2, we will perform the search in 2 steps.
@@ -226,7 +228,8 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
         int8_t dist = dna_.promoter_at(i);
 
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            add_new_promoter(i, dist);
+            // add_new_promoter(i, dist);
+            promoters_[i] = dist;
         }
     }
 }
@@ -236,7 +239,8 @@ void Organism::look_for_new_promoters_starting_after(int32_t pos) {
         int dist = dna_.promoter_at(i);
 
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            add_new_promoter(i, dist);
+            // add_new_promoter(i, dist);
+            promoters_[i] = dist;
         }
     }
 }
@@ -247,7 +251,8 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     for (int32_t i = 0; i < pos; i++) {
         int dist = dna_.promoter_at(i);
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            add_new_promoter(i, dist);
+            // add_new_promoter(i, dist);
+            promoters_[i] = dist;
         }
     }
 }
@@ -262,7 +267,8 @@ void Organism::start_stop_RNA() {
     for (int dna_pos = 0; dna_pos < dna_.length(); dna_pos++) {
         int dist_lead = dna_.promoter_at(dna_pos);
         if (dist_lead <= 4) {
-            add_new_promoter(dna_pos, dist_lead);
+            // add_new_promoter(dna_pos, dist_lead);
+            promoters_[dna_pos] = dist_lead;
         }
 
         // Computing if a terminator exists at that position
@@ -308,7 +314,7 @@ void Organism::compute_RNA() {
             rnas.emplace_back(
                 prom_pos,
                 rna_end,
-                1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                1.0 - std::fabs(((float) prom_pair.second)) / 5.0,
                 rna_length);
             //rna_count_++;
         }
@@ -372,7 +378,7 @@ void Organism::opt_prom_compute_RNA() {
                 rnas.emplace_back(
                     prom_pos,
                     rna_end,
-                    1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                    1.0 - std::fabs(((float) prom_pair.second)) / 5.0,
                     rna_length);
                 //rna_count_++;
             }

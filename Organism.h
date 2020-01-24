@@ -128,8 +128,8 @@ inline void reset_mutation_stats() { nb_swi_ = 0; nb_mut_ = 0; }
     void compute_protein_stats();
 
 private:
-    // Map position (int) to Promoter
-    std::map<int, Promoter> promoters_;
+    // Map of promoters (pos, err)
+    std::map<int, int> promoters_;
 
     std::set<int> terminators;
     std::vector<RNA> rnas;

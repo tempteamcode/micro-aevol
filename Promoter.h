@@ -32,16 +32,18 @@
 /**
  * Struct to store a promoter located on the DNA of an Organism
  */
+/*
 struct Promoter {
     Promoter() = default; // used in std::map
 
-    Promoter(int t_pos, int t_error) {
-        pos = t_pos; error = t_error;
-    }
+    Promoter(int pos, int error)
+    : pos(pos)
+    , error(error)
+    { }
 
     int pos = -1;
     int error = -1;
 };
-
+*/
 
 #endif //PDC_MINI_AEVOL_PROMOTER_H
