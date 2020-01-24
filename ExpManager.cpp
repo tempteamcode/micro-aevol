@@ -82,7 +82,6 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     prev_internal_organisms_ = new Organism*[nb_indivs_];
 
     next_generation_reproducer_ = new int[nb_indivs_]();
-    // dna_mutator_array_ = new DnaMutator*[nb_indivs_];
 
     mutation_rate_ = mutation_rate;
 
@@ -118,13 +117,6 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
 
     printf("Initialized environmental target %f\n", geometric_area_);
 
-    /*
-    // Initializing the PRNGs
-    for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
-        dna_mutator_array_[indiv_id] = nullptr;
-    }
-    */
-
     // Generate a random organism that is better than nothing
     for (;;) {
         Organism indiv(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna);
@@ -132,8 +124,8 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         indiv.start_stop_RNA();
         indiv.compute_RNA();
 
-        // indiv.start_protein();
-        // indiv.compute_protein();
+        //indiv.start_protein();
+        //indiv.compute_protein();
         indiv.compute_proteins();
 
         indiv.translate_protein(w_max);
@@ -180,13 +172,6 @@ ExpManager::ExpManager(int time)
     }
 
     printf("Initialized environmental target %f\n", geometric_area_);
-
-    /*
-    dna_mutator_array_ = new DnaMutator *[nb_indivs_];
-    for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
-        dna_mutator_array_[indiv_id] = nullptr;
-    }
-    */
 }
 
 /**
@@ -353,18 +338,19 @@ bool ExpManager::prepare_mutation(int indiv_id) {
 
     bool mutations = dna_mutator.hasMutate();
     if (mutations) {
-        internal_organisms_[indiv_id] = new Organism(*parent, 0);
+        Organism* child = new Organism(*parent, 0);
+        internal_organisms_[indiv_id] = child;
 
-        internal_organisms_[indiv_id]->global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
-        // internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
-        internal_organisms_[indiv_id]->parent_id_ = parent_id;
+        child->global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
+        // child->indiv_id_ = indiv_id;
+        child->parent_id_ = parent_id;
 
-        dna_mutator.apply_mutations(*(internal_organisms_[indiv_id]));
+        dna_mutator.apply_mutations(*child);
     } else {
         internal_organisms_[indiv_id] = parent;
 
-        internal_organisms_[indiv_id]->usage_count_++;
-        internal_organisms_[indiv_id]->reset_mutation_stats();
+        parent->usage_count_++;
+        parent->reset_mutation_stats();
     }
 
     return mutations;
@@ -374,12 +360,6 @@ bool ExpManager::prepare_mutation(int indiv_id) {
  * Destructor of the ExpManager class
  */
 ExpManager::~ExpManager() {
-    /*
-    for (auto i = 0; i < nb_indivs_; ++i) {
-        delete dna_mutator_array_[i];
-    }
-    delete[] dna_mutator_array_;
-    */
     delete[] internal_organisms_;
     for (auto i = 0; i < nb_indivs_; ++i) {
         if (--prev_internal_organisms_[i]->usage_count_ == 0) delete prev_internal_organisms_[i];
@@ -388,13 +368,6 @@ ExpManager::~ExpManager() {
     delete[] next_generation_reproducer_;
     delete[] target;
 }
-
-/*
-void ExpManager::apply_mutation(int indiv_id)
-{
-    dna_mutator_array_[indiv_id]->apply_mutations(*(internal_organisms_[indiv_id]));
-}
-*/
 
 /**
  * Execute a generation of the simulation for all the Organisms
@@ -408,13 +381,12 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     // Running the simulation process for each organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
-        // dna_mutator_array_[indiv_id]->hasMutate()
         if (prepare_mutation(indiv_id)) {
             Organism& indiv = (*internal_organisms_[indiv_id]);
-            // apply_mutation(indiv_id);
+            //apply_mutation(indiv_id);
             indiv.opt_prom_compute_RNA();
-            // indiv.start_protein();
-            // indiv.compute_protein();
+            //indiv.start_protein();
+            //indiv.compute_protein();
             indiv.compute_proteins();
             indiv.translate_protein(w_max);
             indiv.compute_phenotype_fitness(selection_pressure, target);
@@ -519,13 +491,10 @@ void ExpManager::run_evolution(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         Organism& indiv = (*internal_organisms_[indiv_id]);
         
-        // dna_mutator_array_ is set only to have has_mutate() true so that RNA, protein and phenotype will be computed
-        // dna_mutator_array_[indiv_id] = nullptr;
-
         indiv.opt_prom_compute_RNA();
 
-        // indiv.start_protein();
-        // indiv.compute_protein();
+        //indiv.start_protein();
+        //indiv.compute_protein();
         indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);
@@ -543,12 +512,7 @@ void ExpManager::run_evolution(int nb_gen) {
 
         firstGen = false;
         printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
-        /*
-        for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
-            delete dna_mutator_array_[indiv_id];
-            // dna_mutator_array_[indiv_id] = nullptr;
-        }
-        */
+
         if (AeTime::time() % backup_step_ == 0) {
             save(AeTime::time());
             cout << "Backup for generation " << AeTime::time() << " done !" << endl;
@@ -570,8 +534,7 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
         Organism& indiv = (*internal_organisms_[indiv_id]);
 
         /*
-        // delete dna_mutator_array_[indiv_id];
-        dna_mutator_array_[indiv_id] = new DnaMutator(
+        DnaMutator dna_mutator(
                 std::move(rng_.gen(indiv_id, Threefry::MUTATION)),
                 prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
                 mutation_rate_, indiv_id);
@@ -580,8 +543,8 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
         indiv.opt_prom_compute_RNA();
         //indiv.compute_RNA();
 
-        // indiv.start_protein();
-        // indiv.compute_protein();
+        //indiv.start_protein();
+        //indiv.compute_protein();
         indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);

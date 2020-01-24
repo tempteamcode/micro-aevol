@@ -98,8 +98,6 @@ class ExpManager {
         Organism* best_indiv;
 
         int* next_generation_reproducer_;
-private:
-        // DnaMutator** dna_mutator_array_;
 
 public: // used in Algorithms.cu
         int nb_indivs_;
