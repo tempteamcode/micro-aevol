@@ -43,6 +43,13 @@
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
  */
 
+struct OrganismIDs {
+    int indiv_id_;
+    int parent_id_;
+    int global_id_;
+    int parent_length_;
+};
+
 class Organism {
 
 public:
@@ -54,13 +61,14 @@ public:
  * @param length : Length of the generated random DNA
 // * @param indiv_id : Unique Identification Number
  */
+
 Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
 // , parent_length_(length)
 //, indiv_id_(indiv_id)
 {
   //ids_[0] = indiv_id;
-  ids_[3] = length;
+//  ids_[3] = length;
 }
 
 /**
@@ -76,36 +84,34 @@ Organism(Threefry::Gen&& rng, int length)
 //, indiv_id_(indiv_id)
 {
   //ids_[0] = indiv_id;
-  ids_[3] = length;
+//  ids_[3] = length;
 }*/
 
 
+    /*
     Organism(const Organism& other) = delete;
     Organism(Organism&& other) = delete;
+    */
 
     inline Organism(const Organism& other, int)
     : dna_(other.dna_)
     , promoters_(other.promoters_)
-    // , parent_length_(other.length())
     {
-      ids_[3] = other.ids_[3];
     }
 
     inline Organism(Organism&& other, int)
     : dna_(std::move(other.dna_))
     , promoters_(std::move(other.promoters_))
-    // , parent_length_(other.length())
     {
-      ids_[3] = other.ids_[3];
     }
 
 
-    Organism(gzFile backup_file);
+    Organism(gzFile backup_file, OrganismIDs& ids);
 
     ~Organism() = default;
 
-    void save(gzFile backup_file, int nb_indivs_) const;
-    void load(gzFile backup_file);
+    void save(gzFile backup_file, const OrganismIDs& ids) const;
+    void load(gzFile backup_file, OrganismIDs& ids);
 
     inline int length() const { return dna_.length(); };
 
@@ -146,11 +152,10 @@ public:
 
     Dna dna_;
 
-    int ids_[4];
-    //int& indiv_id_ = ids_[0];
-    //int& parent_id_ = ids_[1];
-    //int& global_id_ = ids_[2];
-    //int& parent_length_ = ids_[3];
+    //int indiv_id_ = ids_[0];
+    //int parent_id_ = ids_[1];
+    //int global_id_ = ids_[2];
+    //int parent_length_ = ids_[3];
 
     std::atomic<int> usage_count_{1};
 

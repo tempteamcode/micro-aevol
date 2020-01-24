@@ -38,9 +38,9 @@
  *
  * @param backup_file : gzFile to read from
  */
-Organism::Organism(gzFile backup_file)
+Organism::Organism(gzFile backup_file, OrganismIDs& ids)
 {
-    load(backup_file);
+    load(backup_file, ids);
 }
 
 /**
@@ -48,9 +48,7 @@ Organism::Organism(gzFile backup_file)
  *
  * @param backup_file : where to the save the organism
  */
-void Organism::save(gzFile backup_file, int nb_indivs_) const {
-    const_cast<int&>(ids_[0]) = ids_[2] % nb_indivs_; // global_id_
-
+void Organism::save(gzFile backup_file, const OrganismIDs& ids) const {
     /*
     gzwrite(backup_file, &indiv_id, sizeof(indiv_id));
     gzwrite(backup_file, &parent_id_, sizeof(parent_id_));
@@ -58,7 +56,7 @@ void Organism::save(gzFile backup_file, int nb_indivs_) const {
 
     gzwrite(backup_file, &parent_length_, sizeof(parent_length_));
     */
-    gzwrite(backup_file, &ids_, 4 * sizeof(ids_[0]));
+    gzwrite(backup_file, &ids, sizeof(ids));
 
     dna_.save(backup_file);
 }
@@ -68,7 +66,7 @@ void Organism::save(gzFile backup_file, int nb_indivs_) const {
  *
  * @param backup_file : from where restore the organism
  */
-void Organism::load(gzFile backup_file) {
+void Organism::load(gzFile backup_file, OrganismIDs& ids) {
     /*
     gzread(backup_file, &indiv_id, sizeof(indiv_id));
     gzread(backup_file, &parent_id_, sizeof(parent_id_));
@@ -76,7 +74,7 @@ void Organism::load(gzFile backup_file) {
 
     gzread(backup_file, &parent_length_, sizeof(parent_length_));
     */
-    gzread(backup_file, &ids_, 4 * sizeof(ids_[0]));
+    gzread(backup_file, &ids, sizeof(ids));
 
     dna_ = Dna_load(backup_file);
 }

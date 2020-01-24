@@ -81,6 +81,13 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     internal_organisms_ = new Organism*[nb_indivs_];
     prev_internal_organisms_ = new Organism*[nb_indivs_];
 
+    internal_ids_ = new OrganismIDs[nb_indivs_];
+    prev_internal_ids_ = new OrganismIDs[nb_indivs_];
+    for (int i = 0; i < nb_indivs_; i++) {
+        internal_ids_[i].indiv_id_ = i;
+        prev_internal_ids_[i].indiv_id_ = i;
+    }
+
     next_generation_reproducer_ = new int[nb_indivs_]();
 
     mutation_rate_ = mutation_rate;
@@ -118,6 +125,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     printf("Initialized environmental target %f\n", geometric_area_);
 
     // Generate a random organism that is better than nothing
+    Organism* parent;
     for (;;) {
         Organism indiv(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna);
 
@@ -135,21 +143,26 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         double r_compare = round((indiv.metaerror - geometric_area_) * 1E10) / 1E10;
         if (!(r_compare >= 0))
         {
-            internal_organisms_[0] = new Organism(std::move(indiv), 0);
+            parent = new Organism(std::move(indiv), 0);
             break;
         }
     }
 
     printf("Populating the environment\n");
+    int parent_length = parent->length();
 
     int global_id = AeTime::time() * nb_indivs_;
     // Create a population of clones based on the randomly generated organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*(internal_organisms_[0]), 0);
-        // internal_organisms_[indiv_id]->ids_[0] = indiv_id; // indiv_id_
-        internal_organisms_[indiv_id]->ids_[1] = 0; // parent_id_
-        internal_organisms_[indiv_id]->ids_[2] = global_id++; // global_id_
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*parent, 0);
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        // ids.indiv_id_ = indiv_id;
+        ids.parent_id_ = 0;
+        ids.global_id_ = global_id++;
+        ids.parent_length_ = parent_length;
+        prev_internal_ids_[indiv_id] = internal_ids_[indiv_id];
     }
+    delete parent;
 
     // Create backup and stats directory
     create_directory();
@@ -243,8 +256,9 @@ void ExpManager::save(int t) const {
     gzwrite(exp_backup_file, &target[0], 300 * sizeof(target[0]));
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id]->save(exp_backup_file, nb_indivs_);
+        prev_internal_organisms_[indiv_id]->save(exp_backup_file, prev_internal_ids_[indiv_id]);
     }
+    // gzwrite(exp_backup_file, &prev_internal_ids_[0], 300 * sizeof(prev_internal_ids_[0]));
 
     rng_.save(exp_backup_file);
 
@@ -295,6 +309,15 @@ void ExpManager::load(int t) {
     internal_organisms_ = new Organism*[nb_indivs_];
     prev_internal_organisms_ = new Organism*[nb_indivs_];
 
+    internal_ids_ = new OrganismIDs[nb_indivs_];
+    prev_internal_ids_ = new OrganismIDs[nb_indivs_];
+    /*
+    for (int i = 0; i < nb_indivs_; i++) {
+        internal_ids_[i].indiv_id_ = i;
+        prev_internal_ids_[i].indiv_id_ = i;
+    }
+    */
+
     // No need to save/load this field from the backup because it will be set at selection()
     next_generation_reproducer_ = new int[nb_indivs_]();
 
@@ -312,7 +335,8 @@ void ExpManager::load(int t) {
     }
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(exp_backup_file);
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(exp_backup_file, internal_ids_[indiv_id]);
+        prev_internal_ids_[indiv_id] = internal_ids_[indiv_id];
         // promoters have to be recomputed, they are not save in the backup
         internal_organisms_[indiv_id]->start_stop_RNA();
     }
@@ -332,10 +356,11 @@ void ExpManager::load(int t) {
 bool ExpManager::prepare_mutation(int indiv_id) {
     int parent_id = next_generation_reproducer_[indiv_id];
     Organism* parent = prev_internal_organisms_[parent_id];
+    int length = parent->length();
 
     DnaMutator dna_mutator(
             std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
-            parent->length(), mutation_rate_
+            length, mutation_rate_
     );
 
     bool mutations = dna_mutator.hasMutate();
@@ -343,13 +368,16 @@ bool ExpManager::prepare_mutation(int indiv_id) {
         Organism* child = new Organism(*parent, 0);
         internal_organisms_[indiv_id] = child;
 
-        // child->ids_[0] = indiv_id; // indiv_id_
-        child->ids_[1] = parent_id; // parent_id_
-        child->ids_[2] = AeTime::time() * nb_indivs_ + indiv_id; // global_id_
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        // ids.indiv_id = indiv_id;
+        ids.parent_id_ = parent_id;
+        ids.global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
+        ids.parent_length_ = length;
 
         dna_mutator.apply_mutations(*child);
     } else {
         internal_organisms_[indiv_id] = parent;
+        internal_ids_[indiv_id] = prev_internal_ids_[indiv_id];
 
         parent->usage_count_++;
         parent->reset_mutation_stats();
@@ -367,6 +395,8 @@ ExpManager::~ExpManager() {
         if (--prev_internal_organisms_[i]->usage_count_ == 0) delete prev_internal_organisms_[i];
     }
     delete[] prev_internal_organisms_;
+    delete[] internal_ids_;
+    delete[] prev_internal_ids_;
     delete[] next_generation_reproducer_;
     delete[] target;
 }
@@ -402,7 +432,17 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
         internal_organisms_[indiv_id] = nullptr;
+
+        prev_internal_ids_[indiv_id] = internal_ids_[indiv_id];  
     }
+
+    /*
+    {
+        OrganismIDs* tmp = internal_ids_;
+        internal_ids_ = prev_internal_ids_;
+        prev_internal_ids_ = tmp;
+    }
+    */
 
     // Search for the best
     double best_fitness = prev_internal_organisms_[0]->fitness;
