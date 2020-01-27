@@ -9,38 +9,43 @@
 #include <zlib.h>
 
 #include "Threefry.h"
+#include "bitset.h"
 
-constexpr int CODON_SIZE = 3;
+typedef uint32_t int_t;
 
-constexpr const char* PROM_SEQ = "0101011001110010010110";
-constexpr const char* SHINE_DAL_SEQ = "011011000";
-constexpr const char* PROTEIN_END = "001"; // CODON_STOP
+constexpr const int_t PROM_SEQ     = 0b0101011001110010010110;
+constexpr const int_t PROM_SEQ_REV = 0b0110100100111001101010;
+constexpr const int PROM_SEQ_LEN = 22;
+
+constexpr const int_t SHINE_DAL_SEQ_BITS = 0b0110110000000;
+constexpr const int_t SHINE_DAL_SEQ_MASK = 0b1111110000111;
+constexpr const int_t SHINE_DAL_SEQ_BITS_REV = 0b0000000110110;
+constexpr const int_t SHINE_DAL_SEQ_MASK_REV = 0b1110000111111;
+constexpr const int SHINE_DAL_SEQ_LEN = 13;
+
+constexpr const int_t PROTEIN_END     = 0b001; // CODON_STOP
+constexpr const int_t PROTEIN_END_REV = 0b100;
+constexpr const int PROTEIN_END_LEN = 3;
+
+constexpr int8_t CODON_LEN = 3;
+
 
 class Dna {
 public:
-  Dna() = default;
+  Dna() : seq_(0) { } ; // used in Organism.cpp
 
-  Dna(const Dna& other) = default;
+  Dna(int length, Threefry::Gen& rng);
 
-  inline Dna(int length) : seq_(length) { }
-
-  // inline Dna(int length, char* genome) : seq_(length) { strcpy(seq_.data(), genome); }
-
-  Dna(int length, Threefry::Gen&& rng);
+  Dna(int length, char* genome);
 
   ~Dna() = default;
 
   inline int length() const { return seq_.size(); };
 
   void save(gzFile backup_file) const;
-  void load(gzFile backup_file);
+  friend Dna Dna_load(gzFile backup_file);
 
-  inline void do_switch(int pos) {
-    if (seq_[pos] == '0')
-      seq_[pos] = '1';
-    else
-      seq_[pos] = '0';
-  }
+  void do_switch(int pos);
 
   int promoter_at(int pos);
 
@@ -53,6 +58,23 @@ public:
   int codon_at(int pos);
 
 public:
-  std::vector<char> seq_; // accessed in Algorithms.cu
+  own_bitset seq_; // used in Algorithms.cu, Organism.cpp
 };
+
+inline void Dna::save(gzFile backup_file) const {
+    int dna_length = length();
+    std::string data = seq_.export_string();
+    gzwrite(backup_file, &dna_length, sizeof(dna_length));
+    gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));
+}
+
+inline Dna Dna_load(gzFile backup_file) {
+    int dna_length;
+    gzread(backup_file, &dna_length, sizeof(dna_length));
+
+    char tmp_seq[dna_length];
+    gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
+
+    return Dna(dna_length, tmp_seq);
+}
 

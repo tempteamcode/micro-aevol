@@ -57,7 +57,7 @@ public:
  */
 Organism(Threefry::Gen&& rng, int length, int indiv_id)
 //: rna_count_(0)
-: dna_(length, std::move(rng))
+: dna_(length, rng)
 , parent_length_(length)
 , indiv_id_(indiv_id)
 {

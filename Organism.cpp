@@ -86,8 +86,7 @@ void Organism::load(gzFile backup_file) {
 
     gzread(backup_file, &parent_length_, sizeof(parent_length_));
 
-    dna_ = Dna();
-    dna_.load(backup_file);
+    dna_ = std::move(Dna_load(backup_file));
 }
 
 /**
@@ -243,6 +242,7 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
     }
     // Hamming distance of the sequence from the promoter consensus
 
+    /*
     for (int32_t i = pos_1; i < pos_2; i++) {
         int8_t dist = dna_.promoter_at(i);
 
@@ -250,27 +250,52 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
             add_new_promoter(i, dist);
         }
     }
+    */
+
+    dna_.seq_.forSequences(pos_1, pos_2-pos_1, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+       int dist = hamming_distance(sequence, PROM_SEQ);
+       if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
+         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
+       }
+    });
 }
 
 void Organism::look_for_new_promoters_starting_after(int32_t pos) {
+    /*
     for (int32_t i = pos; i < dna_.length(); i++) {
         int dist = dna_.promoter_at(i);
-
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);
         }
     }
+    */
+
+    dna_.seq_.forSequences(pos, dna_.length() - pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+       int dist = hamming_distance(sequence, PROM_SEQ);
+       if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
+         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
+       }
+    });
 }
 
 void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     // Hamming distance of the sequence from the promoter consensus
 
+    /*
     for (int32_t i = 0; i < pos; i++) {
         int dist = dna_.promoter_at(i);
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
             add_new_promoter(i, dist);
         }
     }
+    */
+
+    dna_.seq_.forSequences(0, pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+       int dist = hamming_distance(sequence, PROM_SEQ);
+       if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
+         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
+       }
+    });
 }
 
 
@@ -280,6 +305,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
 void Organism::start_stop_RNA() {
     if (dna_.length() < PROM_SIZE) return;
 
+/*
     for (int dna_pos = 0; dna_pos < dna_.length(); dna_pos++) {
         int dist_lead = dna_.promoter_at(dna_pos);
         if (dist_lead <= 4) {
@@ -292,7 +318,26 @@ void Organism::start_stop_RNA() {
             terminators.insert(dna_pos);
 	    }
     }
+*/
+
+    dna_.seq_.forSequences(0, length(), PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+        int dist = hamming_distance(sequence, PROM_SEQ);
+        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
+            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+            add_new_promoter(dna_pos, dist);
+        }
+
+        // Computing if a terminator exists at that position
+        int_t subseq_rev = lookuptable[(sequence >> 7) & 0xf0];
+        int_t getseq_rev = (sequence >> 22-4);
+        int dist_term_lead = hamming_distance(getseq_rev, subseq_rev);
+        if (dist_term_lead == 4) {
+            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+            terminators.insert(dna_pos);
+        }
+    });
 }
+
 
 /**
  * Create the list of RNAs based on the found promoters and terminators on the DNA of an Organism
@@ -406,6 +451,7 @@ void Organism::opt_prom_compute_RNA() {
  */
 void Organism::start_protein() {
     for (RNA& rna : rnas) {
+/*
         if (rna.length < 22) continue;
 
         int c_pos = rna.begin + 22;
@@ -423,6 +469,22 @@ void Organism::start_protein() {
                     ? c_pos - dna_.length()
                     : c_pos;
         }
+*/
+
+        int c_pos = rna.begin;
+        int c_len = rna.length;
+        if (c_len > PROM_SEQ_LEN) {
+            c_pos += PROM_SEQ_LEN;
+            if (c_pos >= length()) c_pos -= length();
+            
+            dna_.seq_.forSequences(c_pos, c_len - PROM_SEQ_LEN, SHINE_DAL_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+                if ((sequence & SHINE_DAL_SEQ_MASK) == SHINE_DAL_SEQ_BITS) {
+                    int dna_pos = pos_plus_len < SHINE_DAL_SEQ_LEN ? length() + pos_plus_len - SHINE_DAL_SEQ_LEN : pos_plus_len - SHINE_DAL_SEQ_LEN;
+                    rna.start_prot.push_back(dna_pos);
+                }
+            });
+        }
+
     }
 }
 
