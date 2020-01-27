@@ -1118,7 +1118,7 @@ void ExpManager::run_evolution(int nb_gen) {
         run_a_step(w_max_, selection_pressure_, firstGen);
 
         firstGen = false;
-        printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
+        //printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
 
         for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
             delete dna_mutator_array_[indiv_id];
