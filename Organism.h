@@ -43,13 +43,6 @@
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
  */
 
-struct OrganismIDs {
-    int indiv_id_;
-    int parent_id_;
-    int global_id_;
-    int parent_length_;
-};
-
 class Organism {
 
 public:
@@ -63,10 +56,7 @@ public:
  */
 Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
-// , ids.parent_length_(length)
-//, ids.indiv_id_(indiv_id)
 {
-  ids.parent_length_ = length;
 }
 
 /**
@@ -78,10 +68,7 @@ Organism(Threefry::Gen&& rng, int length)
  */
 /*Organism(int length, char *genome)
 : dna_(length, genome)
-// , ids.parent_length_(length)
-//, ids.indiv_id_(indiv_id)
 {
-  ids.parent_length_ = length;
 }*/
 
 
@@ -91,19 +78,13 @@ Organism(Threefry::Gen&& rng, int length)
     inline Organism(const Organism& other, int)
     : dna_(other.dna_)
     , promoters_(other.promoters_)
-    //, ids.parent_length_(other.length())
     {
-      ids = other.ids; //!
-      ids.parent_length_ = other.length();
     }
 
     inline Organism(Organism&& other, int)
     : dna_(std::move(other.dna_))
     , promoters_(std::move(other.promoters_))
-    //, ids.parent_length_(other.length())
     {
-      ids = other.ids; //!
-      ids.parent_length_ = other.length();
     }
 
 
@@ -111,7 +92,7 @@ Organism(Threefry::Gen&& rng, int length)
 
     ~Organism() = default;
 
-    void save(gzFile backup_file, int nb_indivs_) const;
+    void save(gzFile backup_file) const;
     void load(gzFile backup_file);
 
     inline int length() const { return dna_.length(); };
@@ -152,8 +133,6 @@ public:
     double metaerror;
 
     Dna dna_;
-
-    OrganismIDs ids;
 
     std::atomic<int> usage_count_{1};
 

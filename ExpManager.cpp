@@ -51,6 +51,7 @@ using namespace std;
 
 #include <utility>
 
+/*
 void checkIDs(OrganismIDs& ids1, OrganismIDs& ids2, const char* context) //!
 {
     if (ids1.indiv_id_ != ids2.indiv_id_ ||
@@ -67,6 +68,7 @@ void checkIDs(OrganismIDs& ids1, OrganismIDs& ids2, const char* context) //!
         throw -1;
     }
 }
+*/
 
 /**
  * Constructor for initializing a new simulation
@@ -172,16 +174,12 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*parent, 0);
 
-        OrganismIDs& ids = internal_organisms_[indiv_id]->ids;
+        OrganismIDs& ids = internal_ids_[indiv_id];
         ids.indiv_id_ = indiv_id; //!
         ids.parent_id_ = 0;
         ids.global_id_ = global_id++;
         ids.parent_length_ = parent_length;
-
-        internal_ids_[indiv_id] = ids; //!
-        prev_internal_ids_[indiv_id] = ids; //!
-        checkIDs(internal_organisms_[indiv_id]->ids, internal_ids_[indiv_id], "ExpManager::ExpManager");
-        checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::ExpManager");
+        prev_internal_ids_[indiv_id] = ids;
     }
 
     // Create backup and stats directory
@@ -276,11 +274,10 @@ void ExpManager::save(int t) const {
     gzwrite(exp_backup_file, &target[0], 300 * sizeof(target[0]));
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        cout << indiv_id << endl; //!
-        OrganismIDs& ids = prev_internal_organisms_[indiv_id]->ids;
-        prev_internal_ids_[indiv_id].indiv_id_ = prev_internal_ids_[indiv_id].global_id_ % nb_indivs_;
-        prev_internal_organisms_[indiv_id]->save(exp_backup_file, nb_indivs_);
-        checkIDs(ids, prev_internal_ids_[indiv_id], "ExpManager::save");
+        OrganismIDs& ids = prev_internal_ids_[indiv_id];
+        ids.indiv_id_ = ids.global_id_ % nb_indivs_;
+        gzwrite(exp_backup_file, &ids, sizeof(ids));
+        prev_internal_organisms_[indiv_id]->save(exp_backup_file);
     }
 
     rng_.save(exp_backup_file);
@@ -360,8 +357,10 @@ void ExpManager::load(int t) {
     }
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        gzread(exp_backup_file, &ids, sizeof(ids));
+        prev_internal_ids_[indiv_id] = internal_ids_[indiv_id];
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(exp_backup_file);
-        prev_internal_ids_[indiv_id] = internal_ids_[indiv_id] = internal_organisms_[indiv_id]->ids; //!
         // promoters have to be recomputed, they are not save in the backup
         internal_organisms_[indiv_id]->start_stop_RNA();
     }
@@ -382,7 +381,6 @@ bool ExpManager::prepare_mutation(int indiv_id) {
     int parent_id = next_generation_reproducer_[indiv_id];
     Organism* parent = prev_internal_organisms_[parent_id];
     int parent_length = parent->length();
-    //checkIDs(prev_internal_organisms_[parent_id]->ids, prev_internal_ids_[parent_id], "ExpManager::prepare_mutation (parent)");
 
     DnaMutator dna_mutator(
             std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
@@ -394,18 +392,16 @@ bool ExpManager::prepare_mutation(int indiv_id) {
         Organism* child = new Organism(*parent, 0);
         internal_organisms_[indiv_id] = child;
 
-        OrganismIDs& ids = child->ids;
-        // ids.indiv_id_ = indiv_id; //!
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        ids.indiv_id_ = prev_internal_ids_[parent_id].indiv_id_; //!
         ids.parent_id_ = parent_id;
         ids.global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
         ids.parent_length_ = parent_length;
-        internal_ids_[indiv_id] = ids; //!
 
         dna_mutator.apply_mutations(*child);
     } else {
         internal_organisms_[indiv_id] = parent;
         internal_ids_[indiv_id] = prev_internal_ids_[parent_id]; //!
-        //checkIDs(internal_organisms_[indiv_id]->ids, internal_ids_[indiv_id], "ExpManager::prepare_mutation (child)");
 
         parent->usage_count_++;
         parent->reset_mutation_stats();
@@ -440,9 +436,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 
     // Running the simulation process for each organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        //checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_a_step (1)");
         selection(indiv_id);
-        //checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_a_step (2)");
         if (prepare_mutation(indiv_id)) {
             Organism& indiv = (*internal_organisms_[indiv_id]);
             //apply_mutation(indiv_id);
@@ -453,11 +447,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             indiv.translate_protein(w_max);
             indiv.compute_phenotype_fitness(selection_pressure, target);
             indiv.compute_protein_stats();
-            //checkIDs(internal_organisms_[indiv_id]->ids, internal_ids_[indiv_id], "ExpManager::run_a_step (3)");
-            //checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_a_step (4)");
         }
-        //checkIDs(internal_organisms_[indiv_id]->ids, internal_ids_[indiv_id], "ExpManager::run_a_step (5)");
-        //checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_a_step (6)");
     }
 
 
@@ -471,10 +461,6 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     OrganismIDs* tmp = prev_internal_ids_;
     prev_internal_ids_ = internal_ids_;
     internal_ids_ = tmp;
-
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_a_step (7)");
-    }
 
     // Search for the best
     double best_fitness = prev_internal_organisms_[0]->fitness;
@@ -507,11 +493,6 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
 
     stats_best.write_best();
     stats_mean.write_average();
-
-
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_a_step (8)");
-    }
 }
 
 
@@ -579,9 +560,6 @@ void ExpManager::run_evolution(int nb_gen) {
         indiv.translate_protein(w_max_);
 
         indiv.compute_phenotype_fitness(selection_pressure_, target);
-
-        checkIDs(internal_organisms_[indiv_id]->ids, internal_ids_[indiv_id], "ExpManager::run_evolution");
-        checkIDs(prev_internal_organisms_[indiv_id]->ids, prev_internal_ids_[indiv_id], "ExpManager::run_evolution");
     }
 
     printf("Running evolution from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
