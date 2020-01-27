@@ -156,8 +156,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
     printf("Start ExpManager\n");
 
     if (resume >= 0) {
@@ -178,6 +176,7 @@ int main(int argc, char* argv[]) {
     }
 
 
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     ExpManager *exp_manager;
     if (resume == -1) {
@@ -195,11 +194,12 @@ int main(int argc, char* argv[]) {
     exp_manager->run_evolution(nbstep);
 #endif
 
+    delete exp_manager;
+
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
     std::cout << "Total elapsed time = " << ((double)(std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count())/1000.0) << "[s] <=> " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
 
-    delete exp_manager;
 
     return 0;
 }
