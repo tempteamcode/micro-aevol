@@ -45,9 +45,9 @@ Organism::Organism(const Organism& other)
 : parent_length_(other.length())
 , dna_(other.dna_)
 , promoters_(other.promoters_)
-//, terminators(other.terminators)
+, terminators(other.terminators)
 {
-    terminators = new set<int>();
+    //terminators = new set<int>();
 }
 
 /**
@@ -160,15 +160,15 @@ void Organism::apply_mutation(vector<int> mutation_list) {
 
         // Remove promoters containing the switched base
         bool rem_prom = remove_promoters_around(pos, mod(pos + 1, length()));
-        //bool rem_term = remove_terminators_around(pos, mod(pos + 1, length()));
+        bool rem_term = remove_terminators_around(pos, mod(pos + 1, length()));
 
         // Look for potential new promoters containing the switched base
         if (length() >= PROM_SIZE)
             look_for_new_promoters_around(pos, mod(pos + 1, length()));
 
         // Look for potential new terminators containing the switched base
-        /*if(length() >= TERM_SIZE)
-            look_for_new_terminators_around(pos, mod(pos + 1, length()));*/
+        if(length() >= TERM_SIZE)
+            look_for_new_terminators_around(pos, mod(pos + 1, length()));
 
         //#pragma omp atomic
         nb_swi_++;
@@ -483,6 +483,8 @@ void Organism::opt_prom_compute_RNA() {
                               ? cur_pos + 10 - dna_.length()
                               : cur_pos + 10;
 
+            terminators->insert(cur_pos);
+
             int32_t rna_length = 0;
 
             if (prom_pos > rna_end)
@@ -510,7 +512,9 @@ void Organism::opt_compute_RNA(){
 
     rnas.reserve(promoters_.size());
 
-    set<int>::iterator term = terminators->begin();
+    auto term = terminators->begin();
+    auto end = terminators->end();
+    auto begin = terminators->begin();
 
     for(const auto &prom_pair: promoters_) {
         int prom_pos = prom_pair.first;
@@ -520,11 +524,13 @@ void Organism::opt_compute_RNA(){
                   ? cur_pos - dna_.length()
                   : cur_pos;
 
-        while(cur_pos > *term && term != terminators->end())
-            ++term;
+        /*while(cur_pos > *term && term != terminators->end())
+            ++term;*/
 
-        if(term == terminators->end())
-            term = terminators->begin();
+        term = terminators->lower_bound(cur_pos);
+
+        if(term == end)
+            term = begin;
 
         int start_pos = *term;
 

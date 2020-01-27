@@ -84,8 +84,8 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     Organism(gzFile backup_file);
 
-    //~Organism() = default;
-    ~Organism() { delete terminators; }
+    ~Organism() = default;
+    //~Organism() { delete terminators; }
 
     void save(gzFile backup_file) const;
     void load(gzFile backup_file);

@@ -408,9 +408,8 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             Organism& indiv = (*internal_organisms_[indiv_id].get());
 
             apply_mutation(indiv_id);
-            indiv.opt_prom_compute_RNA();
-            //indiv.opt_compute_RNA();
-            //indiv.compute_RNA();
+            //indiv.opt_prom_compute_RNA();
+            indiv.opt_compute_RNA();
 
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             time_mutation += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count();
@@ -559,7 +558,7 @@ void ExpManager::run_evolution(int nb_gen) {
         run_a_step(w_max_, selection_pressure_, firstGen);
 
         firstGen = false;
-        printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
+        //printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
 
         //#pragma omp simd
         for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
