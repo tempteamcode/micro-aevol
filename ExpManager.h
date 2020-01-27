@@ -58,6 +58,13 @@ constexpr double W_MIN = 0.0;
 class Organism;
 class Stats;
 
+struct OrganismIDs {
+    int indiv_id_;
+    int parent_id_;
+    int global_id_;
+    int parent_length_;
+};
+
 
 /**
  * Main class of the simulator.
@@ -86,18 +93,18 @@ class ExpManager {
 
         void run_a_step(double w_max, double selection_pressure, bool first_gen);
 
-        void prepare_mutation(int indiv_id);
+        bool prepare_mutation(int indiv_id);
         void selection(int indiv_id);
 
         void apply_mutation(int indiv_id);
 
-        std::shared_ptr<Organism>* internal_organisms_;
-        std::shared_ptr<Organism>* prev_internal_organisms_;
-        std::shared_ptr<Organism> best_indiv;
+        Organism** internal_organisms_;
+        Organism** prev_internal_organisms_;
+        OrganismIDs* internal_ids_;
+        OrganismIDs* prev_internal_ids_;
+        Organism* best_indiv;
 
         int* next_generation_reproducer_;
-private:
-        DnaMutator** dna_mutator_array_;
 
 public: // used in Algorithms.cu
         int nb_indivs_;

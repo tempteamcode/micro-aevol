@@ -28,78 +28,14 @@
 
 #include <cmath>
 #include <cstring>
+#include <zlib.h>
+#include "modulo.h"
 #include "Organism.h"
 #include "ExpManager.h"
 
-#include <iostream>
-
-using namespace std;
-
-/**
- * Constructor to create a clone of a given Organism
- *
- * @param clone : The organism to clone
- */
-Organism::Organism(const Organism& other)
-//: rna_count_(0)
-: parent_length_(other.length())
-, dna_(other.dna_)
-, promoters_(other.promoters_)
-{
-}
-
-/**
- * Create an Organism from a backup/checkpointing file
- *
- * @param backup_file : gzFile to read from
- */
-Organism::Organism(gzFile backup_file)
-//: rna_count_(0)
-{
-    load(backup_file);
-}
-
-/**
- * Save the organism to backup/checkpointing file
- *
- * @param backup_file : where to the save the organism
- */
-void Organism::save(gzFile backup_file) const {
-    gzwrite(backup_file, &indiv_id_, sizeof(indiv_id_));
-    gzwrite(backup_file, &parent_id_, sizeof(parent_id_));
-    gzwrite(backup_file, &global_id, sizeof(global_id));
-
-    gzwrite(backup_file, &parent_length_, sizeof(parent_length_));
-
-    dna_.save(backup_file);
-}
-
-/**
- * Load the organism from backup/checkpointing file
- *
- * @param backup_file : from where restore the organism
- */
-void Organism::load(gzFile backup_file) {
-    gzread(backup_file, &indiv_id_, sizeof(indiv_id_));
-    gzread(backup_file, &parent_id_, sizeof(parent_id_));
-    gzread(backup_file, &global_id, sizeof(global_id));
-
-    gzread(backup_file, &parent_length_, sizeof(parent_length_));
-
-    dna_ = std::move(Dna_load(backup_file));
-}
-
-/**
- * Reset the stats variable (used when an organism is a perfect clone of its parent, it means no mutation)
- */
-void Organism::reset_mutation_stats() {
-    nb_swi_ = 0;
-    nb_mut_ = 0;
-}
-
 void Organism::compute_protein_stats() {
-    nb_genes_activ = 0;
-    nb_genes_inhib = 0;
+    // nb_genes_activ = 0;
+    // nb_genes_inhib = 0;
     nb_func_genes = 0;
     nb_non_func_genes = 0;
     nb_coding_RNAs = 0;
@@ -118,11 +54,13 @@ void Organism::compute_protein_stats() {
         } else {
             nb_non_func_genes++;
         }
+/*
         if (protein.h > 0) {
             nb_genes_activ++;
         } else {
             nb_genes_inhib++;
         }
+*/
     }
 }
 
@@ -134,14 +72,16 @@ void Organism::compute_protein_stats() {
  */
 
 void Organism::apply_mutation(int pos) {
+    const int dna_length = dna_.seq_.size();
+
     dna_.do_switch(pos);
 
     // Remove promoters containing the switched base
-    remove_promoters_around(pos, mod(pos + 1, length()));
+    remove_promoters_around(pos, mod(pos + 1, dna_length));
 
     // Look for potential new promoters containing the switched base
-    if (length() >= PROM_SIZE)
-        look_for_new_promoters_around(pos, mod(pos + 1, length()));
+    if (dna_length >= PROM_SIZE)
+        look_for_new_promoters_around(pos, mod(pos + 1, dna_length));
 
     nb_swi_++;
     nb_mut_++;
@@ -154,9 +94,11 @@ Optimize promoters search
 
 /*
 void Organism::remove_promoters_around(int32_t pos) {
-    if (dna_.length() >= PROM_SIZE) {
+    const int dna_length = dna_.seq_.size();
+
+    if (dna_length >= PROM_SIZE) {
         remove_promoters_starting_between(mod(pos - PROM_SIZE + 1,
-                                              dna_.length()),
+                                              dna_length),
                                           pos);
     } else {
         remove_all_promoters();
@@ -165,9 +107,11 @@ void Organism::remove_promoters_around(int32_t pos) {
 */
 
 void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
-    if (mod(pos_1 - pos_2, dna_.length()) >= PROM_SIZE) {
+    const int dna_length = dna_.seq_.size();
+
+    if (mod(pos_1 - pos_2, dna_length) >= PROM_SIZE) {
         remove_promoters_starting_between(mod(pos_1 - PROM_SIZE + 1,
-                                              dna_.length()),
+                                              dna_length),
                                           pos_2);
     } else {
         remove_all_promoters();
@@ -176,19 +120,23 @@ void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
 
 /*
 void Organism::look_for_new_promoters_around(int32_t pos) {
-    if (dna_.length() >= PROM_SIZE) {
+    const int dna_length = dna_.seq_.size();
+
+    if (dna_length >= PROM_SIZE) {
         look_for_new_promoters_starting_between(
-                mod(pos - PROM_SIZE + 1, dna_.length()),
+                mod(pos - PROM_SIZE + 1, dna_length),
                 pos);
     }
 }
 */
 
 void Organism::look_for_new_promoters_around(int32_t pos_1, int32_t pos_2) {
-    if (dna_.length() >= PROM_SIZE) {
+    const int dna_length = dna_.seq_.size();
+
+    if (dna_length >= PROM_SIZE) {
         look_for_new_promoters_starting_between(
                 mod(pos_1 - PROM_SIZE + 1,
-                    dna_.length()), pos_2);
+                    dna_length), pos_2);
     }
 }
 
@@ -219,21 +167,24 @@ void Organism::remove_promoters_starting_before(int32_t pos) {
 
 /*
 void Organism::locate_promoters() {
-    look_for_new_promoters_starting_between(0, dna_.length());
+    const int dna_length = dna_.seq_.size();
+    look_for_new_promoters_starting_between(0, dna_length);
 }
 */
 
+/*
 void Organism::add_new_promoter(int32_t position, int8_t error) {
     // TODO: Insertion should not always occur, especially if promoter become better or worse ?
     // Promoters are deleted anyway if victim of mutation. the IF stays unnecessary
-    if(promoters_.find(position) == promoters_.end())
-        promoters_[position] = Promoter(position, error);
+    if (promoters_.find(position) == promoters_.end())
+        promoters_[position] = error;
 }
+*/
 
 void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t pos_2) {
     // When pos_1 > pos_2, we will perform the search in 2 steps.
-    // As positions  0 and dna_.length() are equivalent, it's preferable to
-    // keep 0 for pos_1 and dna_.length() for pos_2.
+    // As positions  0 and dna_length are equivalent, it's preferable to
+    // keep 0 for pos_1 and dna_length for pos_2.
 
     if (pos_1 >= pos_2) {
         look_for_new_promoters_starting_after(pos_1);
@@ -247,7 +198,7 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
         int8_t dist = dna_.promoter_at(i);
 
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            add_new_promoter(i, dist);
+            promoters_[i] = dist;
         }
     }
     */
@@ -255,25 +206,25 @@ void Organism::look_for_new_promoters_starting_between(int32_t pos_1, int32_t po
     dna_.seq_.forSequences(pos_1, pos_2-pos_1, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
        int dist = hamming_distance(sequence, PROM_SEQ);
        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
+         promoters_[pos_plus_len < PROM_SEQ_LEN ? dna_.seq_.size() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN] = dist;
        }
     });
 }
 
 void Organism::look_for_new_promoters_starting_after(int32_t pos) {
     /*
-    for (int32_t i = pos; i < dna_.length(); i++) {
+    for (int32_t i = pos; i < dna_.seq_.size(); i++) {
         int dist = dna_.promoter_at(i);
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            add_new_promoter(i, dist);
+            promoters_[i] = dist;
         }
     }
     */
 
-    dna_.seq_.forSequences(pos, dna_.length() - pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+    dna_.seq_.forSequences(pos, dna_.seq_.size() - pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
        int dist = hamming_distance(sequence, PROM_SEQ);
        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
+         promoters_[pos_plus_len < PROM_SEQ_LEN ? dna_.seq_.size() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN] = dist;
        }
     });
 }
@@ -285,7 +236,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     for (int32_t i = 0; i < pos; i++) {
         int dist = dna_.promoter_at(i);
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            add_new_promoter(i, dist);
+            promoters_[i] = dist;
         }
     }
     */
@@ -293,7 +244,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
     dna_.seq_.forSequences(0, pos, PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
        int dist = hamming_distance(sequence, PROM_SEQ);
        if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-         add_new_promoter(pos_plus_len < PROM_SEQ_LEN ? dna_.length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN, dist);
+         promoters_[pos_plus_len < PROM_SEQ_LEN ? dna_.seq_.size() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN] = dist;
        }
     });
 }
@@ -303,13 +254,13 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
  * Search for Promoters and Terminators (i.e. beginning and ending of a RNA) within the whole DNA of an Organism
  */
 void Organism::start_stop_RNA() {
-    if (dna_.length() < PROM_SIZE) return;
+    if (dna_.seq_.size() < PROM_SIZE) return;
 
 /*
-    for (int dna_pos = 0; dna_pos < dna_.length(); dna_pos++) {
+    for (int dna_pos = 0; dna_pos < dna_.seq_.size(); dna_pos++) {
         int dist_lead = dna_.promoter_at(dna_pos);
         if (dist_lead <= 4) {
-            add_new_promoter(dna_pos, dist_lead);
+            promoters_[dna_pos] = dist_lead;
         }
 
         // Computing if a terminator exists at that position
@@ -320,11 +271,11 @@ void Organism::start_stop_RNA() {
     }
 */
 
-    dna_.seq_.forSequences(0, length(), PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+    dna_.seq_.forSequences(0, dna_.seq_.size(), PROM_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
         int dist = hamming_distance(sequence, PROM_SEQ);
         if (dist <= 4) { // dist takes the hamming distance of the sequence from the consensus
-            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
-            add_new_promoter(dna_pos, dist);
+            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? dna_.seq_.size() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+            promoters_[dna_pos] = dist;
         }
 
         // Computing if a terminator exists at that position
@@ -332,7 +283,7 @@ void Organism::start_stop_RNA() {
         int_t getseq_rev = (sequence >> 22-4);
         int dist_term_lead = hamming_distance(getseq_rev, subseq_rev);
         if (dist_term_lead == 4) {
-            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? length() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
+            int dna_pos = pos_plus_len < PROM_SEQ_LEN ? dna_.seq_.size() + pos_plus_len - PROM_SEQ_LEN : pos_plus_len - PROM_SEQ_LEN;
             terminators.insert(dna_pos);
         }
     });
@@ -343,6 +294,8 @@ void Organism::start_stop_RNA() {
  * Create the list of RNAs based on the found promoters and terminators on the DNA of an Organism
  */
 void Organism::compute_RNA() {
+    const int dna_length = dna_.seq_.size();
+
     rnas.clear();
     rnas.reserve(promoters_.size());
 
@@ -350,8 +303,8 @@ void Organism::compute_RNA() {
         int prom_pos = prom_pair.first;
 
         int k = prom_pos + 22;
-        k = k >= dna_.length()
-            ? k - dna_.length()
+        k = k >= dna_length
+            ? k - dna_length
             : k;
 
         auto it_rna_end = terminators.lower_bound(k);
@@ -359,13 +312,13 @@ void Organism::compute_RNA() {
             it_rna_end = terminators.begin();
         }
 
-        int rna_end = *it_rna_end + 10 >= dna_.length()
-                      ? *it_rna_end + 10 - dna_.length()
+        int rna_end = *it_rna_end + 10 >= dna_length
+                      ? *it_rna_end + 10 - dna_length
                       : *it_rna_end + 10;
 
         int rna_length;
         if (prom_pos > rna_end)
-            rna_length = dna_.length() - prom_pos + rna_end;
+            rna_length = dna_length - prom_pos + rna_end;
         else
             rna_length = rna_end - prom_pos;
         rna_length -= 21;
@@ -374,7 +327,7 @@ void Organism::compute_RNA() {
             rnas.emplace_back(
                 prom_pos,
                 rna_end,
-                1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                1.0 - std::fabs(((float) prom_pair.second)) / 5.0,
                 rna_length);
             //rna_count_++;
         }
@@ -385,6 +338,8 @@ void Organism::compute_RNA() {
  * Optimize version that do not need to search the whole Dna for promoters
  */
 void Organism::opt_prom_compute_RNA() {
+    const int dna_length = dna_.seq_.size();
+
     proteins.clear();
     rnas.clear();
     terminators.clear();
@@ -396,8 +351,8 @@ void Organism::opt_prom_compute_RNA() {
 
         /* Search for terminators */
         int cur_pos = prom_pos + 22;
-        cur_pos = cur_pos >= dna_.length()
-                  ? cur_pos - dna_.length()
+        cur_pos = cur_pos >= dna_length
+                  ? cur_pos - dna_length
                   : cur_pos;
 
         int start_pos = cur_pos;
@@ -410,8 +365,8 @@ void Organism::opt_prom_compute_RNA() {
             if (term_dist_leading == 4)
                 terminator_found = true;
             else {
-                cur_pos = cur_pos + 1 >= dna_.length()
-                          ? cur_pos + 1 - dna_.length()
+                cur_pos = cur_pos + 1 >= dna_length
+                          ? cur_pos + 1 - dna_length
                           : cur_pos + 1;
 
                 if (cur_pos == start_pos) {
@@ -421,14 +376,14 @@ void Organism::opt_prom_compute_RNA() {
         }
 
         if (terminator_found) {
-            int32_t rna_end = cur_pos + 10 >= dna_.length()
-                              ? cur_pos + 10 - dna_.length()
+            int32_t rna_end = cur_pos + 10 >= dna_length
+                              ? cur_pos + 10 - dna_length
                               : cur_pos + 10;
 
             int32_t rna_length = 0;
 
             if (prom_pos > rna_end)
-                rna_length = dna_.length() - prom_pos + rna_end;
+                rna_length = dna_length - prom_pos + rna_end;
             else
                 rna_length = rna_end - prom_pos;
 
@@ -438,7 +393,7 @@ void Organism::opt_prom_compute_RNA() {
                 rnas.emplace_back(
                     prom_pos,
                     rna_end,
-                    1.0 - std::fabs(((float) prom_pair.second.error)) / 5.0,
+                    1.0 - std::fabs(((float) prom_pair.second)) / 5.0,
                     rna_length);
                 //rna_count_++;
             }
@@ -449,14 +404,17 @@ void Organism::opt_prom_compute_RNA() {
 /**
  * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
  */
-void Organism::start_protein() {
-    for (RNA& rna : rnas) {
 /*
+void Organism::start_protein() {
+    const int dna_length = dna_.seq_.size();
+
+    for (RNA& rna : rnas) {
+/ *
         if (rna.length < 22) continue;
 
         int c_pos = rna.begin + 22;
-        c_pos = c_pos >= dna_.length()
-                ? c_pos - dna_.length()
+        c_pos = c_pos >= dna_length
+                ? c_pos - dna_length
                 : c_pos;
 
         while (c_pos != rna.end) {
@@ -465,21 +423,21 @@ void Organism::start_protein() {
             }
 
             c_pos++;
-            c_pos = c_pos >= dna_.length()
-                    ? c_pos - dna_.length()
+            c_pos = c_pos >= dna_length
+                    ? c_pos - dna_length
                     : c_pos;
         }
-*/
+* /
 
         int c_pos = rna.begin;
         int c_len = rna.length;
         if (c_len > PROM_SEQ_LEN) {
             c_pos += PROM_SEQ_LEN;
-            if (c_pos >= length()) c_pos -= length();
+            if (c_pos >= dna_length) c_pos -= dna_length;
             
             dna_.seq_.forSequences(c_pos, c_len - PROM_SEQ_LEN, SHINE_DAL_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
                 if ((sequence & SHINE_DAL_SEQ_MASK) == SHINE_DAL_SEQ_BITS) {
-                    int dna_pos = pos_plus_len < SHINE_DAL_SEQ_LEN ? length() + pos_plus_len - SHINE_DAL_SEQ_LEN : pos_plus_len - SHINE_DAL_SEQ_LEN;
+                    int dna_pos = pos_plus_len < SHINE_DAL_SEQ_LEN ? dna_length + pos_plus_len - SHINE_DAL_SEQ_LEN : pos_plus_len - SHINE_DAL_SEQ_LEN;
                     rna.start_prot.push_back(dna_pos);
                 }
             });
@@ -487,11 +445,15 @@ void Organism::start_protein() {
 
     }
 }
+*/
 
 /**
  * Compute the list of genes/proteins of an Organism
  */
+/*
 void Organism::compute_protein() {
+    const int dna_length = dna_.seq_.size();
+
     int resize_to = 0;
     for (const RNA& rna : rnas) {
         resize_to += rna.start_prot.size();
@@ -505,20 +467,20 @@ void Organism::compute_protein() {
             int protein_start = rna.start_prot[protein_idx];
             int current_position = protein_start + 13;
 
-            current_position = current_position >= dna_.length()
-                               ? current_position - dna_.length()
+            current_position = current_position >= dna_length
+                               ? current_position - dna_length
                                : current_position;
 
             int transcribed_start = rna.begin + 22;
-            transcribed_start = transcribed_start >= dna_.length()
-                                ? transcribed_start - dna_.length()
+            transcribed_start = transcribed_start >= dna_length
+                                ? transcribed_start - dna_length
                                 : transcribed_start;
 
             int transcription_length;
             if (transcribed_start <= protein_start) {
                 transcription_length = protein_start - transcribed_start;
             } else {
-                transcription_length = dna_.length() - transcribed_start + protein_start;
+                transcription_length = dna_length - transcribed_start + protein_start;
             }
             transcription_length += 13;
 
@@ -526,14 +488,14 @@ void Organism::compute_protein() {
                 if (dna_.protein_stop(current_position)) {
                     int prot_length;
 
-                    int protein_end = current_position + 2 >= dna_.length() ?
-                                      current_position - dna_.length() + 2 :
+                    int protein_end = current_position + 2 >= dna_length ?
+                                      current_position - dna_length + 2 :
                                       current_position + 2;
 
                     if (protein_start + 13 < protein_end) {
                         prot_length = protein_end - (protein_start + 13);
                     } else {
-                        prot_length = dna_.length() - (protein_start + 13) + protein_end;
+                        prot_length = dna_length - (protein_start + 13) + protein_end;
                     }
 
                     if (prot_length >= 3) {
@@ -550,14 +512,120 @@ void Organism::compute_protein() {
                 }
 
                 current_position += 3;
-                current_position = current_position >= dna_.length()
-                                   ? current_position - dna_.length()
+                current_position = current_position >= dna_length
+                                   ? current_position - dna_length
                                    : current_position;
                 transcription_length += 3;
             }
         }
     }
 }
+*/
+
+
+/**
+ * Search for Shine Dal sequence and Start sequence deliminating the start of genes within one of the RNA of an Organism
+ * Compute the list of genes/proteins of an Organism
+ */
+void Organism::compute_proteins() {
+    const int dna_length = dna_.seq_.size();
+
+    proteins.clear();
+
+    for (RNA& rna : rnas) {
+/*
+        if (rna.length < 22) continue;
+
+        int c_pos = rna.begin + 22;
+        c_pos = c_pos >= dna_length
+                ? c_pos - dna_length
+                : c_pos;
+
+        while (c_pos != rna.end) {
+            if (dna_.shine_dal_start(c_pos)) {
+                compute_protein(rna, c_pos);
+            }
+
+            c_pos++;
+            c_pos = c_pos >= dna_length
+                    ? c_pos - dna_length
+                    : c_pos;
+        }
+*/
+
+        int c_pos = rna.begin;
+        int c_len = rna.length;
+        if (c_len > PROM_SEQ_LEN) {
+            c_pos += PROM_SEQ_LEN;
+            if (c_pos >= dna_length) c_pos -= dna_length;
+            
+            dna_.seq_.forSequences(c_pos, c_len - PROM_SEQ_LEN, SHINE_DAL_SEQ_LEN, [&] (size_t pos_plus_len, int_t sequence) {
+                if ((sequence & SHINE_DAL_SEQ_MASK) == SHINE_DAL_SEQ_BITS) {
+                    int dna_pos = pos_plus_len < SHINE_DAL_SEQ_LEN ? dna_length + pos_plus_len - SHINE_DAL_SEQ_LEN : pos_plus_len - SHINE_DAL_SEQ_LEN;
+                    compute_protein(rna, dna_pos);
+                }
+            });
+        }
+    }
+}
+
+void Organism::compute_protein(RNA& rna, int protein_start) {
+    const int dna_length = dna_.seq_.size();
+
+    int current_position = protein_start + 13;
+
+    current_position = current_position >= dna_length
+                       ? current_position - dna_length
+                       : current_position;
+
+    int transcribed_start = rna.begin + 22;
+    transcribed_start = transcribed_start >= dna_length
+                        ? transcribed_start - dna_length
+                        : transcribed_start;
+
+    int transcription_length;
+    if (transcribed_start <= protein_start) {
+        transcription_length = protein_start - transcribed_start;
+    } else {
+        transcription_length = dna_length - transcribed_start + protein_start;
+    }
+    transcription_length += 13;
+
+    while (rna.length - transcription_length >= 3) {
+        if (dna_.protein_stop(current_position)) {
+            int prot_length;
+
+            int protein_end = current_position + 2 >= dna_length ?
+                              current_position - dna_length + 2 :
+                              current_position + 2;
+
+            if (protein_start + 13 < protein_end) {
+                prot_length = protein_end - (protein_start + 13);
+            } else {
+                prot_length = dna_length - (protein_start + 13) + protein_end;
+            }
+
+            if (prot_length >= 3) {
+                proteins.emplace_back
+                                   (protein_start,
+                                    protein_end,
+                                    prot_length,
+                                    rna.e);
+                //protein_count_++;
+
+                rna.is_coding_ = true;
+            }
+            break;
+        }
+
+        current_position += 3;
+        current_position = current_position >= dna_length
+                           ? current_position - dna_length
+                           : current_position;
+        transcription_length += 3;
+    }
+}
+
 
 /**
  * Compute the pseudo-chimical model (i.e. the width, height and location in the phenotypic space) of a genes/protein
@@ -565,13 +633,15 @@ void Organism::compute_protein() {
  * @param w_max : Maximum width of the triangle generated by a Protein
  */
 void Organism::translate_protein(double w_max) {
+    const int dna_length = dna_.seq_.size();
+
     for (Protein& protein : proteins) {
         if (!protein.is_init_) continue;
 
         int c_pos = protein.protein_start;
         c_pos += 13;
-        c_pos = c_pos >= dna_.length()
-                ? c_pos - dna_.length()
+        c_pos = c_pos >= dna_length
+                ? c_pos - dna_length
                 : c_pos;
 
         int codon_list[64] = {};
@@ -587,8 +657,8 @@ void Organism::translate_protein(double w_max) {
 
             count_loop++;
             c_pos += 3;
-            c_pos = c_pos >= dna_.length()
-                    ? c_pos - dna_.length()
+            c_pos = c_pos >= dna_length
+                    ? c_pos - dna_length
                     : c_pos;
         }
         //printf("\n");
@@ -878,12 +948,7 @@ void Organism::compute_fitness(double selection_pressure, double* target) {
 */
 
 
-/**
- * From the phenotype of an organism, compute its metabolic error and fitness
- *
- * @param selection_pressure : Selection pressure used during the selection process
- */
-void Organism::compute_fitness(double selection_pressure, double* target) {
+void Organism::compute_phenotype_fitness(double selection_pressure, double* target) {
     double activ_phenotype[300]{};
     double inhib_phenotype[300]{};
 

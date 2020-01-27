@@ -1304,7 +1304,7 @@ void predict_size_v2(size_t* dna_size, size_t* next_gen_dna_size, GPUDnaMutator*
 
                 int pos = rng.random(transient_size);
 
-                tab_mut[mutations_offset[indiv_id]+mut_idx].type_ = 0; //MutationEventType::DO_SWITCH;
+                tab_mut[mutations_offset[indiv_id]+mut_idx].type_ = 0; // DO_SWITCH
                 tab_mut[mutations_offset[indiv_id]+mut_idx].pos_1_ = pos;
 
     }

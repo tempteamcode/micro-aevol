@@ -131,7 +131,7 @@ void Stats::compute_best(const Organism& best_indiv) {
     fitness_ = best_indiv.fitness;
     metabolic_error_  = best_indiv.metaerror;
 
-    amount_of_dna_ = best_indiv.length();
+    amount_of_dna_ = best_indiv.dna_.seq_.size();
 
     nb_coding_rnas_ = best_indiv.nb_coding_RNAs;
     nb_non_coding_rnas_ = best_indiv.nb_non_coding_RNAs;
@@ -149,7 +149,7 @@ void Stats::compute_best(const Organism& best_indiv) {
 /**
  * Compute the statistics of the mean of the whole population
  */
-void Stats::compute_average(const std::shared_ptr<Organism>* organisms, int pop_size_) {
+void Stats::compute_average(const Organism * const * organisms, int pop_size_) {
     is_indiv_ = false;
 
     mean_fitness_ = 0;
@@ -164,12 +164,12 @@ void Stats::compute_average(const std::shared_ptr<Organism>* organisms, int pop_
     mean_nb_switch_ = 0;
     
     for (int indiv_id = 0; indiv_id < pop_size_; indiv_id++) {
-        const Organism& indiv = *(organisms[indiv_id].get());
+        const Organism& indiv = *(organisms[indiv_id]);
 
         mean_fitness_ += indiv.fitness;
         mean_metabolic_error_ += indiv.metaerror;
 
-        mean_amount_of_dna_ += indiv.length();
+        mean_amount_of_dna_ += indiv.dna_.seq_.size();
 
         mean_nb_coding_rnas_ += indiv.nb_coding_RNAs;
         mean_nb_non_coding_rnas_ += indiv.nb_non_coding_RNAs;

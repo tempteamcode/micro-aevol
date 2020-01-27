@@ -78,11 +78,12 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     w_max_ = w_max;
     selection_pressure_ = selection_pressure;
 
-    internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
-    prev_internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
+    internal_organisms_ = new Organism*[nb_indivs_];
+    prev_internal_organisms_ = new Organism*[nb_indivs_];
+    internal_ids_ = new OrganismIDs[nb_indivs_];
+    prev_internal_ids_ = new OrganismIDs[nb_indivs_];
 
     next_generation_reproducer_ = new int[nb_indivs_]();
-    dna_mutator_array_ = new DnaMutator *[nb_indivs_];
 
     mutation_rate_ = mutation_rate;
 
@@ -118,45 +119,44 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
 
     printf("Initialized environmental target %f\n", geometric_area_);
 
-
-    // Initializing the PRNGs
-    for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
-        dna_mutator_array_[indiv_id] = nullptr;
-    }
-
     // Generate a random organism that is better than nothing
+    Organism* parent;
     for (;;) {
-        Organism indiv(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna, 0);
+        Organism indiv(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna);
 
         indiv.start_stop_RNA();
         indiv.compute_RNA();
 
-        indiv.start_protein();
-        indiv.compute_protein();
+        //indiv.start_protein();
+        //indiv.compute_protein();
+        indiv.compute_proteins();
 
         indiv.translate_protein(w_max);
 
-        indiv.compute_phenotype();
-
-        indiv.compute_fitness(selection_pressure, target);
+        indiv.compute_phenotype_fitness(selection_pressure, target);
 
         double r_compare = round((indiv.metaerror - geometric_area_) * 1E10) / 1E10;
         if (!(r_compare >= 0))
         {
-            internal_organisms_[0] = std::make_shared<Organism>(std::move(indiv));
+            parent = new Organism(std::move(indiv), 0);
             break;
         }
     }
 
     printf("Populating the environment\n");
+    int parent_length = parent->dna_.seq_.size();
 
+    int global_id = AeTime::time() * nb_indivs_;
     // Create a population of clones based on the randomly generated organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(*(internal_organisms_[0].get()));
-        internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
-        internal_organisms_[indiv_id]->parent_id_ = 0;
-        internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*parent, 0);
+
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        ids.indiv_id_ = indiv_id;
+        ids.parent_id_ = 0;
+        ids.global_id_ = global_id++;
+        ids.parent_length_ = parent_length;
+        prev_internal_ids_[indiv_id] = ids;
     }
 
     // Create backup and stats directory
@@ -180,11 +180,6 @@ ExpManager::ExpManager(int time)
     }
 
     printf("Initialized environmental target %f\n", geometric_area_);
-
-    dna_mutator_array_ = new DnaMutator *[nb_indivs_];
-    for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
-        dna_mutator_array_[indiv_id] = nullptr;
-    }
 }
 
 /**
@@ -247,12 +242,18 @@ void ExpManager::save(int t) const {
 
     gzwrite(exp_backup_file, &mutation_rate_, sizeof(mutation_rate_));
 
+    /*
     for (int i = 0; i < 300; i++) {
         double tmp = target[i];
         gzwrite(exp_backup_file, &tmp, sizeof(tmp));
     }
+    */
+    gzwrite(exp_backup_file, &target[0], 300 * sizeof(target[0]));
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+        OrganismIDs& ids = prev_internal_ids_[indiv_id];
+        ids.indiv_id_ = ids.global_id_ % nb_indivs_;
+        gzwrite(exp_backup_file, &ids, sizeof(ids));
         prev_internal_organisms_[indiv_id]->save(exp_backup_file);
     }
 
@@ -302,8 +303,10 @@ void ExpManager::load(int t) {
 
     gzread(exp_backup_file, &nb_indivs_, sizeof(nb_indivs_));
 
-    internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
-    prev_internal_organisms_ = new std::shared_ptr<Organism>[nb_indivs_];
+    internal_organisms_ = new Organism*[nb_indivs_];
+    prev_internal_organisms_ = new Organism*[nb_indivs_];
+    internal_ids_ = new OrganismIDs[nb_indivs_];
+    prev_internal_ids_ = new OrganismIDs[nb_indivs_];
 
     // No need to save/load this field from the backup because it will be set at selection()
     next_generation_reproducer_ = new int[nb_indivs_]();
@@ -322,8 +325,10 @@ void ExpManager::load(int t) {
     }
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] =
-                std::make_shared<Organism>(exp_backup_file);
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        gzread(exp_backup_file, &ids, sizeof(ids));
+        prev_internal_ids_[indiv_id] = internal_ids_[indiv_id];
+        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(exp_backup_file);
         // promoters have to be recomputed, they are not save in the backup
         internal_organisms_[indiv_id]->start_stop_RNA();
     }
@@ -340,49 +345,52 @@ void ExpManager::load(int t) {
  *
  * @param indiv_id : Organism unique id
  */
-void ExpManager::prepare_mutation(int indiv_id) {
-    dna_mutator_array_[indiv_id] = new DnaMutator(
+bool ExpManager::prepare_mutation(int indiv_id) {
+    int parent_id = next_generation_reproducer_[indiv_id];
+    Organism* parent = prev_internal_organisms_[parent_id];
+    int parent_length = parent->dna_.seq_.size();
+
+    DnaMutator dna_mutator(
             std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
-            prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
-            mutation_rate_, indiv_id);
-    dna_mutator_array_[indiv_id]->generate_mutations();
+            parent_length, mutation_rate_
+    );
 
-    if (dna_mutator_array_[indiv_id]->hasMutate()) {
-        internal_organisms_[indiv_id] = std::make_shared<Organism>(*(prev_internal_organisms_[next_generation_reproducer_[indiv_id]].get()));
+    bool mutations = dna_mutator.hasMutate();
+    if (mutations) {
+        Organism* child = new Organism(*parent, 0);
+        internal_organisms_[indiv_id] = child;
 
-        internal_organisms_[indiv_id]->global_id = AeTime::time() * nb_indivs_ + indiv_id;
-        internal_organisms_[indiv_id]->indiv_id_ = indiv_id;
-        internal_organisms_[indiv_id]->parent_id_ = next_generation_reproducer_[indiv_id];
+        OrganismIDs& ids = internal_ids_[indiv_id];
+        ids.indiv_id_ = prev_internal_ids_[parent_id].indiv_id_;
+        ids.parent_id_ = parent_id;
+        ids.global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
+        ids.parent_length_ = parent_length;
+
+        dna_mutator.apply_mutations(*child);
     } else {
-        int parent_id = next_generation_reproducer_[indiv_id];
+        internal_organisms_[indiv_id] = parent;
+        internal_ids_[indiv_id] = prev_internal_ids_[parent_id];
 
-        internal_organisms_[indiv_id] = prev_internal_organisms_[parent_id];
-
-        internal_organisms_[indiv_id]->usage_count_++;
-        internal_organisms_[indiv_id]->reset_mutation_stats();
+        parent->usage_count_++;
+        parent->reset_mutation_stats();
     }
+
+    return mutations;
 }
 
 /**
  * Destructor of the ExpManager class
  */
 ExpManager::~ExpManager() {
-    /*
-    for (auto i = 0; i < nb_indivs_; ++i) {
-        delete dna_mutator_array_[i];
-    }
-    */
-    delete[] dna_mutator_array_;
-
     delete[] internal_organisms_;
+    for (auto i = 0; i < nb_indivs_; ++i) {
+        if (--prev_internal_organisms_[i]->usage_count_ == 0) delete prev_internal_organisms_[i];
+    }
     delete[] prev_internal_organisms_;
+    delete[] internal_ids_;
+    delete[] prev_internal_ids_;
     delete[] next_generation_reproducer_;
     delete[] target;
-}
-
-void ExpManager::apply_mutation(int indiv_id)
-{
-    dna_mutator_array_[indiv_id]->apply_mutations(*(internal_organisms_[indiv_id]));
 }
 
 /**
@@ -397,25 +405,30 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     // Running the simulation process for each organism
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         selection(indiv_id);
-        prepare_mutation(indiv_id);
-
-        if (dna_mutator_array_[indiv_id]->hasMutate()) {
-            Organism& indiv = (*internal_organisms_[indiv_id].get());
-            apply_mutation(indiv_id);
+        if (prepare_mutation(indiv_id)) {
+            Organism& indiv = (*internal_organisms_[indiv_id]);
+            //apply_mutation(indiv_id);
             indiv.opt_prom_compute_RNA();
-            indiv.start_protein();
-            indiv.compute_protein();
+            //indiv.start_protein();
+            //indiv.compute_protein();
+            indiv.compute_proteins();
             indiv.translate_protein(w_max);
-            indiv.compute_phenotype();
-            indiv.compute_fitness(selection_pressure, target);
+            indiv.compute_phenotype_fitness(selection_pressure, target);
+            indiv.compute_protein_stats();
         }
     }
 
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+        if (--prev_internal_organisms_[indiv_id]->usage_count_ == 0) delete prev_internal_organisms_[indiv_id];
+
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
         internal_organisms_[indiv_id] = nullptr;
     }
+
+    OrganismIDs* tmp = prev_internal_ids_;
+    prev_internal_ids_ = internal_ids_;
+    internal_ids_ = tmp;
 
     // Search for the best
     double best_fitness = prev_internal_organisms_[0]->fitness;
@@ -437,14 +450,13 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
     if (first_gen) {
         stats_best.prepare();
         stats_mean.prepare();
+
+		for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+		    prev_internal_organisms_[indiv_id]->compute_protein_stats();
+		}
     }
 
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        if (first_gen || dna_mutator_array_[indiv_id]->hasMutate())
-            prev_internal_organisms_[indiv_id]->compute_protein_stats();
-    }
-
-    stats_best.compute_best(*(best_indiv.get()));
+    stats_best.compute_best(*(best_indiv));
     stats_mean.compute_average(prev_internal_organisms_, nb_indivs_);
 
     stats_best.write_best();
@@ -505,21 +517,17 @@ void ExpManager::selection(int indiv_id) {
  */
 void ExpManager::run_evolution(int nb_gen) {
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        Organism& indiv = (*internal_organisms_[indiv_id].get());
+        Organism& indiv = (*internal_organisms_[indiv_id]);
         
-        // dna_mutator_array_ is set only to have has_mutate() true so that RNA, protein and phenotype will be computed
-        dna_mutator_array_[indiv_id] = nullptr;
-
         indiv.opt_prom_compute_RNA();
 
-        indiv.start_protein();
-        indiv.compute_protein();
+        //indiv.start_protein();
+        //indiv.compute_protein();
+        indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);
 
-        indiv.compute_phenotype();
-
-        indiv.compute_fitness(selection_pressure_, target);
+        indiv.compute_phenotype_fitness(selection_pressure_, target);
     }
 
     printf("Running evolution from %d to %d\n", AeTime::time(), AeTime::time() + nb_gen);
@@ -532,11 +540,6 @@ void ExpManager::run_evolution(int nb_gen) {
 
         firstGen = false;
         printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
-
-        for (int indiv_id = 0; indiv_id < nb_indivs_; ++indiv_id) {
-            delete dna_mutator_array_[indiv_id];
-            dna_mutator_array_[indiv_id] = nullptr;
-        }
 
         if (AeTime::time() % backup_step_ == 0) {
             save(AeTime::time());
@@ -556,25 +559,25 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
   cout << "Transfer done in " << duration_transfer_in << endl;
 
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        Organism& indiv = (*internal_organisms_[indiv_id].get());
+        Organism& indiv = (*internal_organisms_[indiv_id]);
 
-        delete dna_mutator_array_[indiv_id];
-        dna_mutator_array_[indiv_id] = new DnaMutator(
+        /*
+        DnaMutator dna_mutator(
                 std::move(rng_.gen(indiv_id, Threefry::MUTATION)),
-                prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->length(),
+                prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->dna_.seq_.size(),
                 mutation_rate_, indiv_id);
+        */
 
         indiv.opt_prom_compute_RNA();
         //indiv.compute_RNA();
 
-        indiv.start_protein();
-        indiv.compute_protein();
+        //indiv.start_protein();
+        //indiv.compute_protein();
+        indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);
 
-        indiv.compute_phenotype();
-
-        indiv.compute_fitness(selection_pressure_, target);
+        indiv.compute_phenotype_fitness(selection_pressure_, target);
     }
 
   printf("Running evolution GPU from %d to %d\n",AeTime::time(),AeTime::time()+nb_gen);

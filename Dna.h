@@ -35,17 +35,13 @@ constexpr const int CODON_LEN = 3;
 
 class Dna {
 public:
-  Dna() : seq_(0) { } ; // used in Organism.cpp
+  // inline Dna() : seq_(0) { } // used in Organism.cpp
 
   inline Dna(int length, Threefry::Gen& rng) : seq_(length, [&rng] () { return (rng.random(NB_BASE) != 0); }) { }
 
   inline Dna(int length, char* genome) : seq_(genome, length) { }
 
   inline Dna(int length) : seq_(length) { seq_.set_all(false); }
-
-  ~Dna() = default;
-
-  inline int length() const { return seq_.size(); };
 
   void save(gzFile backup_file) const;
   friend Dna&& Dna_load(gzFile backup_file);
@@ -67,7 +63,7 @@ public:
 };
 
 inline void Dna::save(gzFile backup_file) const {
-    int dna_length = length();
+    int dna_length = seq_.size();
     std::string data = seq_.export_string();
     gzwrite(backup_file, &dna_length, sizeof(dna_length));
     gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));

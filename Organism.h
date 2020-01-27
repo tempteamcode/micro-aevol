@@ -33,17 +33,16 @@
 #include <set>
 #include <zlib.h>
 #include <list>
+#include <atomic>
 
-#include "Promoter.h"
 #include "RNA.h"
 #include "Protein.h"
 #include "Dna.h"
 
-//class ExpManager;
-
 /**
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
  */
+
 class Organism {
 
 public:
@@ -53,13 +52,9 @@ public:
  *
  * @param rng : random generator
  * @param length : Length of the generated random DNA
- * @param indiv_id : Unique Identification Number
  */
-Organism(Threefry::Gen&& rng, int length, int indiv_id)
-//: rna_count_(0)
+inline Organism(Threefry::Gen&& rng, int length)
 : dna_(length, rng)
-, parent_length_(length)
-, indiv_id_(indiv_id)
 {
 }
 
@@ -68,45 +63,82 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
  *
  * @param length : Length of the generated random DNA
  * @param genome : Genome to assign to the organism
- * @param indiv_id : Unique Identification Number
  */
-/*Organism(int length, char *genome, int indiv_id)
-//: rna_count_(0)
-: parent_length_(length)
-, dna_(length, genome)
-, indiv_id_(indiv_id)
+/*
+inline Organism(int length, char *genome)
+: dna_(length, genome)
 {
-}*/
-
-    Organism(const Organism& other);
-
-    Organism(gzFile backup_file);
+}
+*/
 
     ~Organism() = default;
 
-    void save(gzFile backup_file) const;
-    void load(gzFile backup_file);
 
-    inline int length() const { return dna_.length(); };
+    Organism(const Organism& other) = delete;
+    Organism(Organism&& other) = delete;
+
+    inline Organism(const Organism& other, int)
+    : dna_(other.dna_)
+    , promoters_(other.promoters_)
+    {
+    }
+
+    inline Organism(Organism&& other, int)
+    : dna_(std::move(other.dna_))
+    , promoters_(std::move(other.promoters_))
+    {
+    }
+
+
+/**
+ * Create an Organism from a backup/checkpointing file
+ *
+ * @param backup_file : gzFile to read from
+ */
+inline Organism(gzFile backup_file) : dna_(Dna_load(backup_file)) { }
+
+/**
+ * Save the organism to backup/checkpointing file
+ *
+ * @param backup_file : where to the save the organism
+ */
+inline void save(gzFile backup_file) const { dna_.save(backup_file); }
+
+/**
+ * Load the organism from backup/checkpointing file
+ *
+ * @param backup_file : from where restore the organism
+ */
+//inline void load(gzFile backup_file) { dna_ = Dna_load(backup_file); }
+
+    // inline int length() const { return dna_.seq_.size(); };
 
     void apply_mutation(int pos);
 
     void start_stop_RNA();
     void compute_RNA();
     void opt_prom_compute_RNA();
-    void start_protein();
-    void compute_protein();
+    //void start_protein();
+    //void compute_protein();
+    void compute_proteins();
+private:
+    void compute_protein(RNA& rna, int protein_start);
+public:
     void translate_protein(double w_max);
 
-    inline void compute_phenotype() { } // void compute_phenotype();
-    void compute_fitness(double selection_pressure, double* target);
+    // void compute_phenotype();
+    // void compute_fitness(double selection_pressure, double* target);
+    void compute_phenotype_fitness(double selection_pressure, double* target);
 
-    void reset_mutation_stats();
+/**
+ * Reset the stats variable (used when an organism is a perfect clone of its parent, it means no mutation)
+ */
+inline void reset_mutation_stats() { nb_swi_ = 0; nb_mut_ = 0; }
     void compute_protein_stats();
 
 private:
-    // Map position (int) to Promoter
-    std::map<int, Promoter> promoters_;
+    // Map of promoters (pos, err)
+    std::map<int, int> promoters_;
 
     std::set<int> terminators;
     std::vector<RNA> rnas;
@@ -117,25 +149,18 @@ public:
     double metaerror;
 
     Dna dna_;
-    int parent_length_;
 
-    int indiv_id_;
-    int parent_id_;
-
-    int global_id = -1;
-
-    int usage_count_ = 1;
+    std::atomic<int> usage_count_{1};
 
     // Stats
-    int nb_genes_activ = 0;
-    int nb_genes_inhib = 0;
-    int nb_func_genes = 0;
-    int nb_non_func_genes = 0;
-    int nb_coding_RNAs = 0;
-    int nb_non_coding_RNAs = 0;
-
-    int nb_swi_ = 0;
-    int nb_mut_ = 0;
+    // int nb_genes_activ;
+    // int nb_genes_inhib;
+    int nb_func_genes;
+    int nb_non_func_genes;
+    int nb_coding_RNAs;
+    int nb_non_coding_RNAs;
+    int nb_swi_;
+    int nb_mut_;
 
 private:
     void remove_all_promoters();
@@ -164,25 +189,6 @@ private:
 
     void add_new_promoter(int32_t position, int8_t error);
 
-    inline int32_t mod(int32_t a, int32_t b) {
-        assert(b > 0);
-
-        while (a < 0) a += b;
-        while (a >= b) a -= b;
-
-        return a;
-        //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
-    }
-
-    inline int64_t mod(int64_t a, int64_t b) {
-        assert(b > 0);
-
-        while (a < 0) a += b;
-        while (a >= b) a -= b;
-
-        return a;
-        //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
-    }
 };
 
 

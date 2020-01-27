@@ -25,38 +25,4 @@
 // ***************************************************************************************************************
 
 #include "DnaMutator.h"
-#include "Organism.h"
-
-/**
- * Generate both type of the mutations (see below)
- */
-void DnaMutator::generate_mutations() {
-    mutation_list_.clear();
-    nb_swi_ = mut_prng_.binomial_random(length_, mutation_rate_);
-    nb_mut_ = nb_swi_;
-
-    for (int cpt_mut_ = nb_mut_; cpt_mut_ > 0; cpt_mut_--) {
-        generate_next_mutation(cpt_mut_);
-    }
-}
-
-/**
- * Generate the next mutation event for an organism.
- */
-void DnaMutator::generate_next_mutation(int cpt_mut_) {
-    int random_value = mut_prng_.random(cpt_mut_);
-
-    if (random_value < nb_swi_) {
-        nb_swi_--;
-
-        int pos = mut_prng_.random(length_);
-        mutation_list_.push_back(pos);
-    }
-}
-
-void DnaMutator::apply_mutations(Organism& organism) {
-    for (int mutation_pos: mutation_list_) {
-        organism.apply_mutation(mutation_pos);
-    }
-}
 

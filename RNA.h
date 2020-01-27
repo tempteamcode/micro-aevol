@@ -28,14 +28,10 @@
 #ifndef PDC_MINI_AEVOL_RNA_H
 #define PDC_MINI_AEVOL_RNA_H
 
-#include <vector>
-
 /**
  * Struct to store a RNA and its related variable
  */
 struct RNA {
-    RNA () {};
-    
     RNA (int t_begin, int t_end, double t_e, int t_length)
     : begin(t_begin)
     , end(t_end)
@@ -49,7 +45,6 @@ struct RNA {
     int end;
 
     double e;
-    std::vector<int> start_prot;
     int length;
     bool is_coding_;
 };
