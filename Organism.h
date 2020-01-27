@@ -54,7 +54,7 @@ public:
  * @param length : Length of the generated random DNA
 // * @param indiv_id : Unique Identification Number
  */
-Organism(Threefry::Gen&& rng, int length)
+inline Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
 {
 }
@@ -66,10 +66,14 @@ Organism(Threefry::Gen&& rng, int length)
  * @param genome : Genome to assign to the organism
 // * @param indiv_id : Unique Identification Number
  */
-/*Organism(int length, char *genome)
+/*
+inline Organism(int length, char *genome)
 : dna_(length, genome)
 {
-}*/
+}
+*/
+
+    ~Organism() = default;
 
 
     Organism(const Organism& other) = delete;
@@ -88,12 +92,26 @@ Organism(Threefry::Gen&& rng, int length)
     }
 
 
-    Organism(gzFile backup_file);
+/**
+ * Create an Organism from a backup/checkpointing file
+ *
+ * @param backup_file : gzFile to read from
+ */
+inline Organism(gzFile backup_file) { load(backup_file); }
 
-    ~Organism() = default;
+/**
+ * Save the organism to backup/checkpointing file
+ *
+ * @param backup_file : where to the save the organism
+ */
+inline void save(gzFile backup_file) const { dna_.save(backup_file); }
 
-    void save(gzFile backup_file) const;
-    void load(gzFile backup_file);
+/**
+ * Load the organism from backup/checkpointing file
+ *
+ * @param backup_file : from where restore the organism
+ */
+inline void load(gzFile backup_file) { dna_ = Dna_load(backup_file); }
 
     inline int length() const { return dna_.length(); };
 

@@ -51,25 +51,6 @@ using namespace std;
 
 #include <utility>
 
-/*
-void checkIDs(OrganismIDs& ids1, OrganismIDs& ids2, const char* context) //!
-{
-    if (ids1.indiv_id_ != ids2.indiv_id_ ||
-        ids1.parent_id_ != ids2.parent_id_ ||
-        ids1.global_id_ != ids2.global_id_ ||
-        ids1.parent_length_ != ids2.parent_length_)
-    {
-        cerr << "BAD IDs IN " << context << endl;
-        cerr << "indiv : " << ids1.indiv_id_ << " / " << ids2.indiv_id_ << endl;
-        cerr << "parent: " << ids1.parent_id_ << " / " << ids2.parent_id_ << endl;
-        cerr << "global: " << ids1.global_id_ << " / " << ids2.global_id_ << endl;
-        // cerr << "length: " << ids1.parent_length_ << " / " << ids2.parent_length_ << endl;
-        cerr << endl;
-        throw -1;
-    }
-}
-*/
-
 /**
  * Constructor for initializing a new simulation
  *
@@ -101,10 +82,6 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     prev_internal_organisms_ = new Organism*[nb_indivs_];
     internal_ids_ = new OrganismIDs[nb_indivs_];
     prev_internal_ids_ = new OrganismIDs[nb_indivs_];
-    for (int i = 0; i < nb_indivs_; i++) {
-        internal_ids_[i].indiv_id_ = i;
-        prev_internal_ids_[i].indiv_id_ = i;
-    }
 
     next_generation_reproducer_ = new int[nb_indivs_]();
 
@@ -175,7 +152,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*parent, 0);
 
         OrganismIDs& ids = internal_ids_[indiv_id];
-        ids.indiv_id_ = indiv_id; //!
+        ids.indiv_id_ = indiv_id;
         ids.parent_id_ = 0;
         ids.global_id_ = global_id++;
         ids.parent_length_ = parent_length;
@@ -330,15 +307,6 @@ void ExpManager::load(int t) {
     prev_internal_organisms_ = new Organism*[nb_indivs_];
     internal_ids_ = new OrganismIDs[nb_indivs_];
     prev_internal_ids_ = new OrganismIDs[nb_indivs_];
-    // [...]
-    // [...]
-    // [...]
-    // [...]
-    // [...]
-    // [...]
-    // [...]
-    // [...]
-    // [...]
 
     // No need to save/load this field from the backup because it will be set at selection()
     next_generation_reproducer_ = new int[nb_indivs_]();
@@ -393,7 +361,7 @@ bool ExpManager::prepare_mutation(int indiv_id) {
         internal_organisms_[indiv_id] = child;
 
         OrganismIDs& ids = internal_ids_[indiv_id];
-        ids.indiv_id_ = prev_internal_ids_[parent_id].indiv_id_; //!
+        ids.indiv_id_ = prev_internal_ids_[parent_id].indiv_id_;
         ids.parent_id_ = parent_id;
         ids.global_id_ = AeTime::time() * nb_indivs_ + indiv_id;
         ids.parent_length_ = parent_length;
@@ -401,7 +369,7 @@ bool ExpManager::prepare_mutation(int indiv_id) {
         dna_mutator.apply_mutations(*child);
     } else {
         internal_organisms_[indiv_id] = parent;
-        internal_ids_[indiv_id] = prev_internal_ids_[parent_id]; //!
+        internal_ids_[indiv_id] = prev_internal_ids_[parent_id];
 
         parent->usage_count_++;
         parent->reset_mutation_stats();

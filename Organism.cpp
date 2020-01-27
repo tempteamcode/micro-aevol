@@ -33,34 +33,6 @@
 #include "Organism.h"
 #include "ExpManager.h"
 
-/**
- * Create an Organism from a backup/checkpointing file
- *
- * @param backup_file : gzFile to read from
- */
-Organism::Organism(gzFile backup_file)
-{
-    load(backup_file);
-}
-
-/**
- * Save the organism to backup/checkpointing file
- *
- * @param backup_file : where to the save the organism
- */
-void Organism::save(gzFile backup_file) const {
-    dna_.save(backup_file);
-}
-
-/**
- * Load the organism from backup/checkpointing file
- *
- * @param backup_file : from where restore the organism
- */
-void Organism::load(gzFile backup_file) {
-    dna_ = Dna_load(backup_file);
-}
-
 void Organism::compute_protein_stats() {
     // nb_genes_activ = 0;
     // nb_genes_inhib = 0;
