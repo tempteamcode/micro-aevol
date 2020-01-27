@@ -47,6 +47,7 @@ Organism::Organism(const Organism& other)
 , promoters_(other.promoters_)
 //, terminators(other.terminators)
 {
+    terminators = new set<int>();
 }
 
 /**
@@ -176,7 +177,7 @@ void Organism::apply_mutation(vector<int> mutation_list) {
         nb_mut_++;
     }
 
-    //cout << "TEST: " << promoters_.size() << " : " << terminators.size() << endl;
+    //cout << "TEST: " << promoters_.size() << " : " << terminators->size() << endl;
 }
 
 
@@ -286,7 +287,7 @@ void Organism::look_for_new_promoters_starting_before(int32_t pos) {
  * Dealing with terminators
  */
 void Organism::remove_all_terminators(){
-    terminators.clear();
+    terminators->clear();
 }
 
 bool Organism::remove_terminators_around(int32_t pos_1, int32_t pos_2){
@@ -305,22 +306,22 @@ bool Organism::remove_terminators_starting_between(int32_t pos_1, int32_t pos_2)
         return remove_terminators_starting_after(pos_1) || remove_terminators_starting_before(pos_2);
     } else {
         // suppression is in [pos1, pos_2[, pos_2 is excluded
-        int init_size = terminators.size();
-        terminators.erase(terminators.lower_bound(pos_1), terminators.upper_bound(pos_2-1));
-        return init_size != terminators.size();
+        int init_size = terminators->size();
+        terminators->erase(terminators->lower_bound(pos_1), terminators->upper_bound(pos_2-1));
+        return init_size != terminators->size();
     }
 }
 
 bool Organism::remove_terminators_starting_after(int32_t pos){
-    int init_size = terminators.size();
-    terminators.erase(terminators.lower_bound(pos), terminators.end());
-    return init_size != terminators.size();
+    int init_size = terminators->size();
+    terminators->erase(terminators->lower_bound(pos), terminators->end());
+    return init_size != terminators->size();
 }
 
 bool Organism::remove_terminators_starting_before(int32_t pos){
-    int init_size = terminators.size();
-    terminators.erase(terminators.begin(), terminators.upper_bound(pos-1));
-    return init_size != terminators.size();
+    int init_size = terminators->size();
+    terminators->erase(terminators->begin(), terminators->upper_bound(pos-1));
+    return init_size != terminators->size();
 }
 
 void Organism::look_for_new_terminators_around(int32_t pos_1, int32_t pos_2){
@@ -343,7 +344,7 @@ void Organism::look_for_new_terminators_starting_between(int32_t pos_1, int32_t 
         int8_t dist = dna_.terminator_at(i);
 
         if (dist == 4) { // dist takes the hamming distance of the sequence from the consensus
-            terminators.insert(i);
+            terminators->insert(i);
         }
     }
 }
@@ -353,7 +354,7 @@ void Organism::look_for_new_terminators_starting_after(int32_t pos){
         int dist = dna_.terminator_at(i);
 
         if (dist == 4) { // dist takes the hamming distance of the sequence from the consensus
-            terminators.insert(i);
+            terminators->insert(i);
         }
     }
 }
@@ -363,7 +364,7 @@ void Organism::look_for_new_terminators_starting_before(int32_t pos){
         int dist = dna_.terminator_at(i);
 
         if (dist == 4) { // dist takes the hamming distance of the sequence from the consensus
-            terminators.insert(i);
+            terminators->insert(i);
         }
     }
 }
@@ -390,7 +391,7 @@ void Organism::start_stop_RNA() {
         if (dist_term_lead == 4) {
             //#pragma omp critical
             {
-                terminators.insert(dna_pos);
+                terminators->insert(dna_pos);
             }
 	    }
     }
@@ -411,9 +412,9 @@ void Organism::compute_RNA() {
             ? k - dna_.length()
             : k;
 
-        auto it_rna_end = terminators.lower_bound(k);
-        if (it_rna_end == terminators.end()) {
-            it_rna_end = terminators.begin();
+        auto it_rna_end = terminators->lower_bound(k);
+        if (it_rna_end == terminators->end()) {
+            it_rna_end = terminators->begin();
         }
 
         int rna_end = *it_rna_end + 10 >= dna_.length()
@@ -444,7 +445,7 @@ void Organism::compute_RNA() {
 void Organism::opt_prom_compute_RNA() {
     proteins.clear();
     rnas.clear();
-    terminators.clear();
+    terminators->clear();
 
     rnas.reserve(promoters_.size());
 
@@ -509,7 +510,7 @@ void Organism::opt_compute_RNA(){
 
     rnas.reserve(promoters_.size());
 
-    set<int>::iterator term = terminators.begin();
+    set<int>::iterator term = terminators->begin();
 
     for(const auto &prom_pair: promoters_) {
         int prom_pos = prom_pair.first;
@@ -519,11 +520,11 @@ void Organism::opt_compute_RNA(){
                   ? cur_pos - dna_.length()
                   : cur_pos;
 
-        while(cur_pos > *term && term != terminators.end())
+        while(cur_pos > *term && term != terminators->end())
             ++term;
 
-        if(term == terminators.end())
-            term = terminators.begin();
+        if(term == terminators->end())
+            term = terminators->begin();
 
         int start_pos = *term;
 

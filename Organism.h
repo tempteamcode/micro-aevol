@@ -62,6 +62,7 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 , parent_length_(length)
 , indiv_id_(indiv_id)
 {
+    terminators = new std::set<int>();
 }
 
 /**
@@ -83,7 +84,8 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     Organism(gzFile backup_file);
 
-    ~Organism() = default;
+    //~Organism() = default;
+    ~Organism() { delete terminators; }
 
     void save(gzFile backup_file) const;
     void load(gzFile backup_file);
@@ -112,7 +114,8 @@ private:
     // Map position (int) to Promoter
     std::map<int, Promoter> promoters_;
 
-    std::set<int> terminators;
+    //std::set<int> terminators;
+    std::set<int>* terminators;
     std::vector<RNA> rnas;
 
     std::vector<Protein> proteins;
