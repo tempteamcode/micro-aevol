@@ -136,7 +136,18 @@ void Organism::compute_protein_stats() {
  * @return
  */
 
-//void Organism::apply_mutation(int pos) {
+/*void Organism::apply_mutation(int pos) {
+    dna_.do_switch(pos);
+
+    remove_promoters_around(pos, mod(pos + 1, length()));
+
+    if (length() >= PROM_SIZE)
+        look_for_new_promoters_around(pos, mod(pos + 1, length()));
+
+    nb_swi_++;
+    nb_mut_++;
+}*/
+
 void Organism::apply_mutation(vector<int> mutation_list) {
     this->mutation_list=mutation_list;
 

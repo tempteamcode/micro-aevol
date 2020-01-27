@@ -428,6 +428,9 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
         internal_organisms_[indiv_id] = nullptr;
     }*/
 
+    prev_internal_organisms_[0] = internal_organisms_[0];
+    internal_organisms_[0] = nullptr;
+
     // Search for the best
     double best_fitness = prev_internal_organisms_[0]->fitness;
     int idx_best = 0;

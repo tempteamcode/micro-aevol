@@ -108,7 +108,7 @@ Organism(Threefry::Gen&& rng, int length, int indiv_id)
 
     void opt_compute_RNA();
 
-//private:
+private:
     // Map position (int) to Promoter
     std::map<int, Promoter> promoters_;
 
