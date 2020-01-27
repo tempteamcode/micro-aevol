@@ -125,6 +125,7 @@ private:
 class own_dynamic_bitset
 {
 public:
+  typedef int size_t;
   typedef uint32_t int_t;
   typedef uninitialized_vector<int_t> vec_t;
   
@@ -362,6 +363,7 @@ private:
 class own_bitset
 {
 public:
+  typedef int size_t;
   typedef uint32_t int_t;
   static constexpr size_t sizeof_int = sizeof(int_t) * 8;
   
