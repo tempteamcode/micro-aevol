@@ -373,10 +373,11 @@ public:
   {
     std::memcpy(data, other.data, ((used+sizeof_int-1) / sizeof_int) * sizeof(int_t));
   }
+
   own_bitset(own_bitset&& other) : used(other.used), data(other.data)
   {
-    //other.used = 0;
-    other.data = nullptr;
+    //const_cast<size_t&>(other.used) = 0;
+    const_cast<int_t*&>(other.data) = nullptr;
   }
 
   inline own_bitset& operator=(const own_bitset& other)
@@ -384,7 +385,7 @@ public:
     if (&other == this) return *this;
     if (data != nullptr) delete[] data;
     const_cast<size_t&>(used) = other.used;
-    data = new int_t[(used+sizeof_int-1) / sizeof_int];
+    const_cast<int_t*&>(data) = new int_t[(used+sizeof_int-1) / sizeof_int];
     std::memcpy(data, other.data, ((used+sizeof_int-1) / sizeof_int) * sizeof(int_t));
     return *this;
   }
@@ -392,10 +393,11 @@ public:
   inline own_bitset& operator=(own_bitset&& other)
   {
     if (&other == this) return *this;
+    if (data != nullptr) delete[] data;
     const_cast<size_t&>(used) = other.used;
-    data = other.data;
-    //other.used = 0;
-    other.data = nullptr;
+    const_cast<int_t*&>(data) = other.data;
+    //const_cast<size_t&>(other.used) = 0;
+    const_cast<int_t*&>(other.data) = nullptr;
     return *this;
   }
 
@@ -650,7 +652,7 @@ public:
 
 private:
   const size_t used;
-  int_t* data;
+  int_t* const data;
 };
 
 

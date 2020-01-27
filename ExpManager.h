@@ -36,8 +36,6 @@
 
 #include <memory>
 
-constexpr int8_t NB_BASE = 2;
-
 
 constexpr int PROM_SIZE = 22;
 

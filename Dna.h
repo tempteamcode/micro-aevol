@@ -10,8 +10,11 @@
 
 #include "Threefry.h"
 #include "bitset.h"
+#include "bits.h"
 
 typedef uint32_t int_t;
+
+constexpr const int NB_BASE = 2;
 
 constexpr const int_t PROM_SEQ     = 0b0101011001110010010110;
 constexpr const int_t PROM_SEQ_REV = 0b0110100100111001101010;
@@ -27,35 +30,37 @@ constexpr const int_t PROTEIN_END     = 0b001; // CODON_STOP
 constexpr const int_t PROTEIN_END_REV = 0b100;
 constexpr const int PROTEIN_END_LEN = 3;
 
-constexpr int8_t CODON_LEN = 3;
+constexpr const int CODON_LEN = 3;
 
 
 class Dna {
 public:
   Dna() : seq_(0) { } ; // used in Organism.cpp
 
-  Dna(int length, Threefry::Gen& rng);
+  inline Dna(int length, Threefry::Gen& rng) : seq_(length, [&rng] () { return (rng.random(NB_BASE) != 0); }) { }
 
-  Dna(int length, char* genome);
+  inline Dna(int length, char* genome) : seq_(genome, length) { }
+
+  inline Dna(int length) : seq_(length) { seq_.set_all(false); }
 
   ~Dna() = default;
 
   inline int length() const { return seq_.size(); };
 
   void save(gzFile backup_file) const;
-  friend Dna Dna_load(gzFile backup_file);
+  friend Dna&& Dna_load(gzFile backup_file);
 
-  void do_switch(int pos);
+  inline void do_switch(int pos) { seq_.flip(pos); }
 
-  int promoter_at(int pos);
+  inline int promoter_at(int pos) { return hamming_distance(seq_.getSequenceRev(pos, PROM_SEQ_LEN), PROM_SEQ_REV); }
 
-  int terminator_at(int pos);
+  inline int terminator_at(int pos) { return hamming_distance(seq_.getSequenceRev(pos, 4), seq_.getSequence(pos+10-4+1, 4)); }
 
-  bool shine_dal_start(int pos);
+  inline bool shine_dal_start(int pos) { return (seq_.getSequenceRev(pos, SHINE_DAL_SEQ_LEN) & SHINE_DAL_SEQ_MASK_REV) == SHINE_DAL_SEQ_BITS_REV; }
 
-  bool protein_stop(int pos);
+  inline bool protein_stop(int pos) { return seq_.getSequenceRev(pos, PROTEIN_END_LEN) == PROTEIN_END_REV; }
 
-  int codon_at(int pos);
+  inline int codon_at(int pos) { return seq_.getSequence(pos, CODON_LEN); }
 
 public:
   own_bitset seq_; // used in Algorithms.cu, Organism.cpp
@@ -68,13 +73,13 @@ inline void Dna::save(gzFile backup_file) const {
     gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));
 }
 
-inline Dna Dna_load(gzFile backup_file) {
+inline Dna&& Dna_load(gzFile backup_file) {
     int dna_length;
     gzread(backup_file, &dna_length, sizeof(dna_length));
 
     char tmp_seq[dna_length];
     gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
 
-    return Dna(dna_length, tmp_seq);
+    return std::move(Dna(dna_length, tmp_seq));
 }
 
