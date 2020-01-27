@@ -159,6 +159,8 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
         prev_internal_ids_[indiv_id] = ids;
     }
 
+    delete parent;
+
     // Create backup and stats directory
     create_directory();
 }
