@@ -49,6 +49,17 @@ Organism::Organism(gzFile backup_file)
  * @param backup_file : where to the save the organism
  */
 void Organism::save(gzFile backup_file, int nb_indivs_) const {
+    const_cast<int&>(ids.indiv_id_) = ids.global_id_ % nb_indivs_;
+
+    /*
+    gzwrite(backup_file, &indiv_id, sizeof(indiv_id));
+    gzwrite(backup_file, &parent_id_, sizeof(parent_id_));
+    gzwrite(backup_file, &global_id_, sizeof(global_id_));
+
+    gzwrite(backup_file, &parent_length_, sizeof(parent_length_));
+    */
+    gzwrite(backup_file, &ids, sizeof(ids));
+
     dna_.save(backup_file);
 }
 
@@ -58,6 +69,15 @@ void Organism::save(gzFile backup_file, int nb_indivs_) const {
  * @param backup_file : from where restore the organism
  */
 void Organism::load(gzFile backup_file) {
+    /*
+    gzread(backup_file, &indiv_id, sizeof(indiv_id));
+    gzread(backup_file, &parent_id_, sizeof(parent_id_));
+    gzread(backup_file, &global_id_, sizeof(global_id_));
+
+    gzread(backup_file, &parent_length_, sizeof(parent_length_));
+    */
+    gzread(backup_file, &ids, sizeof(ids));
+
     dna_ = Dna_load(backup_file);
 }
 

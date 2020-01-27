@@ -43,6 +43,13 @@
  * Class that implements an organism and its related DNAs, RNAs, Protein and Phenotype
  */
 
+struct OrganismIDs {
+    int indiv_id_;
+    int parent_id_;
+    int global_id_;
+    int parent_length_;
+};
+
 class Organism {
 
 public:
@@ -52,10 +59,14 @@ public:
  *
  * @param rng : random generator
  * @param length : Length of the generated random DNA
+// * @param indiv_id : Unique Identification Number
  */
 Organism(Threefry::Gen&& rng, int length)
 : dna_(length, std::move(rng))
+// , ids.parent_length_(length)
+//, ids.indiv_id_(indiv_id)
 {
+  ids.parent_length_ = length;
 }
 
 /**
@@ -63,10 +74,14 @@ Organism(Threefry::Gen&& rng, int length)
  *
  * @param length : Length of the generated random DNA
  * @param genome : Genome to assign to the organism
+// * @param indiv_id : Unique Identification Number
  */
 /*Organism(int length, char *genome)
 : dna_(length, genome)
+// , ids.parent_length_(length)
+//, ids.indiv_id_(indiv_id)
 {
+  ids.parent_length_ = length;
 }*/
 
 
@@ -76,13 +91,19 @@ Organism(Threefry::Gen&& rng, int length)
     inline Organism(const Organism& other, int)
     : dna_(other.dna_)
     , promoters_(other.promoters_)
+    //, ids.parent_length_(other.length())
     {
+      ids = other.ids; //!
+      ids.parent_length_ = other.length();
     }
 
     inline Organism(Organism&& other, int)
     : dna_(std::move(other.dna_))
     , promoters_(std::move(other.promoters_))
+    //, ids.parent_length_(other.length())
     {
+      ids = other.ids; //!
+      ids.parent_length_ = other.length();
     }
 
 
@@ -131,6 +152,8 @@ public:
     double metaerror;
 
     Dna dna_;
+
+    OrganismIDs ids;
 
     std::atomic<int> usage_count_{1};
 
