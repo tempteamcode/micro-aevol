@@ -25,7 +25,7 @@ if ( USE_OMP )
     endif ()
 endif ( USE_OMP )
 
-add_library(micro_aevol ExpManager.cpp ExpManager.h AeTime.cpp AeTime.h DnaMutator.h Organism.cpp Organism.h RNA.h Protein.h Stats.cpp Stats.h Gaussian.h Threefry.cpp Timetracer.h)
+add_library(micro_aevol ExpManager.cpp ExpManager.h AeTime.cpp AeTime.h DnaMutator.h Organism.cpp Organism.h RNA.h Protein.h Stats.cpp Stats.h Gaussian.h Threefry.cpp Threefry.h Timetracer.h bits.h bitset.h)
 
 find_package(ZLIB REQUIRED)
 if ( ZLIB_FOUND )
