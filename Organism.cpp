@@ -27,11 +27,39 @@
 
 
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <zlib.h>
-#include "modulo.h"
 #include "Organism.h"
 #include "ExpManager.h"
+
+inline int32_t mod_once(int32_t a, int32_t b) {
+    return a < 0 ? a + b : (a >= b ? a - b : a);
+}
+inline int64_t mod_once(int64_t a, int64_t b) {
+    return a < 0 ? a + b : (a >= b ? a - b : a);
+}
+
+/*
+inline int32_t mod_loop(int32_t a, int32_t b) {
+    // assert(b > 0);
+
+    while (a < 0) a += b;
+    while (a >= b) a -= b;
+
+    return a;
+    //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
+}
+inline int64_t mod_loop(int64_t a, int64_t b) {
+    // assert(b > 0);
+
+    while (a < 0) a += b;
+    while (a >= b) a -= b;
+
+    return a;
+    //return m >= 0 ? m % n : ( n - abs ( m%n ) ) % n;
+}
+*/
 
 void Organism::compute_protein_stats() {
     // nb_genes_activ = 0;
@@ -77,11 +105,11 @@ void Organism::apply_mutation(int pos) {
     dna_.do_switch(pos);
 
     // Remove promoters containing the switched base
-    remove_promoters_around(pos, mod(pos + 1, dna_length));
+    remove_promoters_around(pos, mod_once(pos + 1, dna_length));
 
     // Look for potential new promoters containing the switched base
     if (dna_length >= PROM_SIZE)
-        look_for_new_promoters_around(pos, mod(pos + 1, dna_length));
+        look_for_new_promoters_around(pos, mod_once(pos + 1, dna_length));
 
     nb_swi_++;
     nb_mut_++;
@@ -97,9 +125,7 @@ void Organism::remove_promoters_around(int32_t pos) {
     const int dna_length = dna_.seq_.size();
 
     if (dna_length >= PROM_SIZE) {
-        remove_promoters_starting_between(mod(pos - PROM_SIZE + 1,
-                                              dna_length),
-                                          pos);
+        remove_promoters_starting_between(mod_once(pos - PROM_SIZE + 1, dna_length), pos);
     } else {
         remove_all_promoters();
     }
@@ -109,10 +135,8 @@ void Organism::remove_promoters_around(int32_t pos) {
 void Organism::remove_promoters_around(int32_t pos_1, int32_t pos_2) {
     const int dna_length = dna_.seq_.size();
 
-    if (mod(pos_1 - pos_2, dna_length) >= PROM_SIZE) {
-        remove_promoters_starting_between(mod(pos_1 - PROM_SIZE + 1,
-                                              dna_length),
-                                          pos_2);
+    if (mod_once(pos_1 - pos_2, dna_length) >= PROM_SIZE) {
+        remove_promoters_starting_between(mod_once(pos_1 - PROM_SIZE + 1, dna_length), pos_2);
     } else {
         remove_all_promoters();
     }
@@ -123,9 +147,7 @@ void Organism::look_for_new_promoters_around(int32_t pos) {
     const int dna_length = dna_.seq_.size();
 
     if (dna_length >= PROM_SIZE) {
-        look_for_new_promoters_starting_between(
-                mod(pos - PROM_SIZE + 1, dna_length),
-                pos);
+        look_for_new_promoters_starting_between(mod_once(pos - PROM_SIZE + 1, dna_length), pos);
     }
 }
 */
@@ -134,9 +156,7 @@ void Organism::look_for_new_promoters_around(int32_t pos_1, int32_t pos_2) {
     const int dna_length = dna_.seq_.size();
 
     if (dna_length >= PROM_SIZE) {
-        look_for_new_promoters_starting_between(
-                mod(pos_1 - PROM_SIZE + 1,
-                    dna_length), pos_2);
+        look_for_new_promoters_starting_between(mod_once(pos_1 - PROM_SIZE + 1, dna_length), pos_2);
     }
 }
 
