@@ -297,7 +297,7 @@ public:
       int_t res;
 
       if(subindex + len <= sizeof_int && (pos%used)+len <= used){
-          int_t mask = MASKS[len-1];
+          int_t mask = lookupmasks[len-1];
 
           mask = mask << subindex;
 
@@ -308,17 +308,17 @@ public:
           int len2 = used - (index + 1) * sizeof_int;
           int len3 = len - len1 - len2;
 
-          int_t mask1 = MASKS[len1-1];
+          int_t mask1 = lookupmasks[len1-1];
 
           mask1 = mask1 << subindex;
 
           res = (mask1 & data[index]) >> (subindex);
 
-          int_t mask2 = MASKS[len2-1];
+          int_t mask2 = lookupmasks[len2-1];
 
           res |= (mask2 & data[index + 1]) << len1;
 
-          int_t mask3 = MASKS[len3-1];
+          int_t mask3 = lookupmasks[len3-1];
 
           res |= (mask3 & data[0]) << (len1 + len2);
       }else{
@@ -332,13 +332,13 @@ public:
           int len1 = size_left;
           int len2 = len - len1;
 
-          int_t mask1 = MASKS[len1-1];
+          int_t mask1 = lookupmasks[len1-1];
 
           mask1 = mask1 << subindex;
 
           res = (mask1&data[index])>>(subindex);
 
-          int_t mask2 = MASKS[len2-1];
+          int_t mask2 = lookupmasks[len2-1];
 
           int newIndex = index+1;
           if(pos+len > used)
@@ -560,7 +560,7 @@ public:
       int_t res;
 
       if(subindex + len <= sizeof_int && (pos%used)+len <= used){
-          int_t mask = MASKS[len-1];
+          int_t mask = lookupmasks[len-1];
 
           mask = mask << subindex;
 
@@ -571,17 +571,17 @@ public:
           int len2 = used - (index + 1) * sizeof_int;
           int len3 = len - len1 - len2;
 
-          int_t mask1 = MASKS[len1-1];
+          int_t mask1 = lookupmasks[len1-1];
 
           mask1 = mask1 << subindex;
 
           res = (mask1 & data[index]) >> (subindex);
 
-          int_t mask2 = MASKS[len2-1];
+          int_t mask2 = lookupmasks[len2-1];
 
           res |= (mask2 & data[index + 1]) << len1;
 
-          int_t mask3 = MASKS[len3-1];
+          int_t mask3 = lookupmasks[len3-1];
 
           res |= (mask3 & data[0]) << (len1 + len2);
       }else{
@@ -595,13 +595,13 @@ public:
           int len1 = size_left;
           int len2 = len - len1;
 
-          int_t mask1 = MASKS[len1-1];
+          int_t mask1 = lookupmasks[len1-1];
 
           mask1 = mask1 << subindex;
 
           res = (mask1&data[index])>>(subindex);
 
-          int_t mask2 = MASKS[len2-1];
+          int_t mask2 = lookupmasks[len2-1];
 
           int newIndex = index+1;
           if(pos+len > used)
@@ -620,7 +620,7 @@ public:
   template <typename callback_t>
   int_t forSequences(size_t start, size_t count, int len, callback_t callback) const {
     int_t result = getSequence(start, len);
-    int_t mask = MASKS[len-1];
+    int_t mask = lookupmasks[len-1];
 
     size_t pos = start + len;
     if (pos >= used) pos -= used;
