@@ -161,8 +161,8 @@ public:
     int nb_non_func_genes;
     int nb_coding_RNAs;
     int nb_non_coding_RNAs;
-    int nb_swi_;
-    int nb_mut_;
+    int nb_swi_ = 0;
+    int nb_mut_ = 0;
 
 private:
     void remove_all_promoters();
