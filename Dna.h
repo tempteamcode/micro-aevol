@@ -44,7 +44,6 @@ public:
   inline Dna(int length) : seq_(length) { seq_.set_all(false); }
 
   void save(gzFile backup_file) const;
-  friend Dna&& Dna_load(gzFile backup_file);
 
   inline void do_switch(int pos) { seq_.flip(pos); }
 
@@ -69,13 +68,13 @@ inline void Dna::save(gzFile backup_file) const {
     gzwrite(backup_file, data.c_str(), dna_length * sizeof(char));
 }
 
-inline Dna&& Dna_load(gzFile backup_file) {
+inline Dna Dna_load(gzFile backup_file) {
     int dna_length;
     gzread(backup_file, &dna_length, sizeof(dna_length));
 
     char tmp_seq[dna_length];
     gzread(backup_file, tmp_seq, dna_length * sizeof(tmp_seq[0]));
 
-    return std::move(Dna(dna_length, tmp_seq));
+    return Dna(dna_length, tmp_seq);
 }
 

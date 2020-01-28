@@ -45,6 +45,9 @@ public:
 
     Stats(int generation, bool best_or_not);
 
+    Stats(const Stats& other) = delete;
+    Stats(Stats&& other) = delete;
+
     ~Stats() {
         if (is_indiv_) {
             statfile_best_.flush();

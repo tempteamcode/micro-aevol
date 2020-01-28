@@ -122,7 +122,7 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
     // Generate a random organism that is better than nothing
     Organism* parent;
     for (;;) {
-        Organism indiv(std::move(rng_.gen(0, Threefry::MUTATION)), init_length_dna);
+        Organism indiv(rng_.gen(0, Threefry::MUTATION), init_length_dna);
 
         indiv.start_stop_RNA();
         indiv.compute_RNA();
@@ -335,7 +335,7 @@ void ExpManager::load(int t) {
         internal_organisms_[indiv_id]->start_stop_RNA();
     }
 
-    rng_ = std::move(Threefry(grid_width_, grid_height_, exp_backup_file));
+    rng_ = Threefry(grid_width_, grid_height_, exp_backup_file);
 
     if (gzclose(exp_backup_file) != Z_OK) {
         cerr << "Error while closing backup file" << endl;
@@ -353,7 +353,7 @@ bool ExpManager::prepare_mutation(int indiv_id) {
     int parent_length = parent->dna_.seq_.size();
 
     DnaMutator dna_mutator(
-            std::move(Threefry::Gen(std::move(rng_.gen(indiv_id, Threefry::MUTATION)))),
+            Threefry::Gen(rng_.gen(indiv_id, Threefry::MUTATION)),
             parent_length, mutation_rate_
     );
 
@@ -502,7 +502,7 @@ void ExpManager::selection(int indiv_id) {
         probs[i] = local_fit_array[i] / sum_local_fit;
     }
 
-    auto rng = std::move(rng_.gen(indiv_id, Threefry::REPROD));
+    Threefry::Gen rng = rng_.gen(indiv_id, Threefry::REPROD);
     int found_org = rng.roulette_random(probs, neighborhood_size);
 
     int x_offset = (found_org / selection_scope_x) - 1;
@@ -565,7 +565,7 @@ void ExpManager::run_evolution_on_gpu(int nb_gen) {
 
         /*
         DnaMutator dna_mutator(
-                std::move(rng_.gen(indiv_id, Threefry::MUTATION)),
+                rng_.gen(indiv_id, Threefry::MUTATION),
                 prev_internal_organisms_[next_generation_reproducer_[indiv_id]]->dna_.seq_.size(),
                 mutation_rate_, indiv_id);
         */
