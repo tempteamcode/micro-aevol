@@ -434,7 +434,7 @@ void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_
             internal_organisms_[indiv_id] = nullptr;
         }
 
-        #pragma omp critical
+        #pragma omp single
         {
             OrganismIDs *tmp = prev_internal_ids_;
             prev_internal_ids_ = internal_ids_;
