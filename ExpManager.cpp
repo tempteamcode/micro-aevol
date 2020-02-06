@@ -148,6 +148,8 @@ ExpManager::ExpManager(int grid_height, int grid_width, int seed, double mutatio
 
     int global_id = AeTime::time() * nb_indivs_;
     // Create a population of clones based on the randomly generated organism
+
+    #pragma omp parallel for
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id] = new Organism(*parent, 0);
 
@@ -385,6 +387,7 @@ bool ExpManager::prepare_mutation(int indiv_id) {
  */
 ExpManager::~ExpManager() {
     delete[] internal_organisms_;
+
     for (auto i = 0; i < nb_indivs_; ++i) {
         if (--prev_internal_organisms_[i]->usage_count_ == 0) delete prev_internal_organisms_[i];
     }
@@ -405,45 +408,52 @@ ExpManager::~ExpManager() {
 void ExpManager::run_a_step(double w_max, double selection_pressure, bool first_gen) {
 
     // Running the simulation process for each organism
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        selection(indiv_id);
-        if (prepare_mutation(indiv_id)) {
-            Organism& indiv = (*internal_organisms_[indiv_id]);
-            //apply_mutation(indiv_id);
-            indiv.opt_prom_compute_RNA();
-            //indiv.start_protein();
-            //indiv.compute_protein();
-            indiv.compute_proteins();
-            indiv.translate_protein(w_max);
-            indiv.compute_phenotype_fitness(selection_pressure, target);
-            indiv.compute_protein_stats();
-        }
-    }
-
-
-    for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
-        if (--prev_internal_organisms_[indiv_id]->usage_count_ == 0) delete prev_internal_organisms_[indiv_id];
-
-        prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
-        internal_organisms_[indiv_id] = nullptr;
-    }
-
-    OrganismIDs* tmp = prev_internal_ids_;
-    prev_internal_ids_ = internal_ids_;
-    internal_ids_ = tmp;
-
-    // Search for the best
-    double best_fitness = prev_internal_organisms_[0]->fitness;
+    double best_fitness;
     int idx_best = 0;
-    for (int indiv_id = 1; indiv_id < nb_indivs_; indiv_id++) {
-        if (prev_internal_organisms_[indiv_id]->fitness > best_fitness) {
-            idx_best = indiv_id;
-            best_fitness = prev_internal_organisms_[indiv_id]->fitness;
+
+    #pragma omp parallel
+    {
+        #pragma omp for
+        for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+            selection(indiv_id);
+            if (prepare_mutation(indiv_id)) {
+                Organism &indiv = (*internal_organisms_[indiv_id]);
+                indiv.opt_prom_compute_RNA();
+                indiv.compute_proteins();
+                indiv.translate_protein(w_max);
+                indiv.compute_phenotype_fitness(selection_pressure, target);
+                indiv.compute_protein_stats();
+            }
+        }
+
+        #pragma omp for
+        for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
+            if (--prev_internal_organisms_[indiv_id]->usage_count_ == 0) delete prev_internal_organisms_[indiv_id];
+
+            prev_internal_organisms_[indiv_id] = internal_organisms_[indiv_id];
+            internal_organisms_[indiv_id] = nullptr;
+        }
+
+        #pragma omp critical
+        {
+            OrganismIDs *tmp = prev_internal_ids_;
+            prev_internal_ids_ = internal_ids_;
+            internal_ids_ = tmp;
+
+            // Search for the best
+            best_fitness = prev_internal_organisms_[0]->fitness;
+        }
+
+        #pragma omp for
+        for (int indiv_id = 1; indiv_id < nb_indivs_; indiv_id++) {
+            if (prev_internal_organisms_[indiv_id]->fitness > best_fitness) {
+                idx_best = indiv_id;
+                best_fitness = prev_internal_organisms_[indiv_id]->fitness;
+            }
         }
     }
+
     best_indiv = prev_internal_organisms_[idx_best];
-
-
     // Stats
 
     stats_best.reinit(AeTime::time(), true);
@@ -487,11 +497,13 @@ void ExpManager::selection(int indiv_id) {
     int cur_x, cur_y;
 
     for (int8_t i = -1; i < selection_scope_x - 1; i++) {
+        #pragma omp simd
         for (int8_t j = -1; j < selection_scope_y - 1; j++) {
             cur_x = (x + i + grid_width_) % grid_width_;
             cur_y = (y + j + grid_height_) % grid_height_;
 
             local_fit_array[count] = prev_internal_organisms_[cur_x * grid_height_ + cur_y]->fitness;
+
             sum_local_fit += local_fit_array[count];
 
             count++;
@@ -518,13 +530,13 @@ void ExpManager::selection(int indiv_id) {
  * @param nb_gen : Number of generations to simulate
  */
 void ExpManager::run_evolution(int nb_gen) {
+
+    #pragma omp parallel for
     for (int indiv_id = 0; indiv_id < nb_indivs_; indiv_id++) {
         Organism& indiv = (*internal_organisms_[indiv_id]);
         
         indiv.opt_prom_compute_RNA();
 
-        //indiv.start_protein();
-        //indiv.compute_protein();
         indiv.compute_proteins();
 
         indiv.translate_protein(w_max_);
@@ -541,7 +553,7 @@ void ExpManager::run_evolution(int nb_gen) {
         run_a_step(w_max_, selection_pressure_, firstGen);
 
         firstGen = false;
-        printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
+        //printf("Generation %d : Best individual fitness %e\n", AeTime::time(), best_indiv->fitness);
 
         if (AeTime::time() % backup_step_ == 0) {
             save(AeTime::time());

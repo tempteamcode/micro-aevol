@@ -64,12 +64,6 @@ inline Organism(Threefry::Gen&& rng, int length)
  * @param length : Length of the generated random DNA
  * @param genome : Genome to assign to the organism
  */
-/*
-inline Organism(int length, char *genome)
-: dna_(length, genome)
-{
-}
-*/
 
     ~Organism() = default;
 
@@ -109,25 +103,18 @@ inline void save(gzFile backup_file) const { dna_.save(backup_file); }
  *
  * @param backup_file : from where restore the organism
  */
-//inline void load(gzFile backup_file) { dna_ = Dna_load(backup_file); }
-
-    // inline int length() const { return dna_.seq_.size(); };
-
-    void apply_mutation(int pos);
+    void apply_mutation(std::vector<int> mut_list);
 
     void start_stop_RNA();
     void compute_RNA();
     void opt_prom_compute_RNA();
-    //void start_protein();
-    //void compute_protein();
+
     void compute_proteins();
 private:
     void compute_protein(RNA& rna, int protein_start);
 public:
     void translate_protein(double w_max);
 
-    // void compute_phenotype();
-    // void compute_fitness(double selection_pressure, double* target);
     void compute_phenotype_fitness(double selection_pressure, double* target);
 
 /**
@@ -153,8 +140,6 @@ public:
     std::atomic<int> usage_count_{1};
 
     // Stats
-    // int nb_genes_activ;
-    // int nb_genes_inhib;
     int nb_func_genes;
     int nb_non_func_genes;
     int nb_coding_RNAs;
@@ -165,8 +150,6 @@ public:
 private:
     void remove_all_promoters();
 
-    // void remove_promoters_around(int32_t pos);
-
     void remove_promoters_around(int32_t pos_1, int32_t pos_2);
 
     void remove_promoters_starting_between(int32_t pos_1, int32_t pos_2);
@@ -174,10 +157,6 @@ private:
     void remove_promoters_starting_after(int32_t pos);
 
     void remove_promoters_starting_before(int32_t pos);
-
-    // void locate_promoters();
-
-    // void look_for_new_promoters_around(int32_t pos);
 
     void look_for_new_promoters_around(int32_t pos_1, int32_t pos_2);
 

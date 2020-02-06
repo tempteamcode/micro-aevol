@@ -29,6 +29,7 @@
 #include <iostream>
 #include <getopt.h>
 #include <cstring>
+#include <chrono>
 
 #include "ExpManager.h"
 
@@ -174,7 +175,7 @@ int main(int argc, char* argv[]) {
         if (seed == -1) seed = 566545665;
     }
 
-
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     ExpManager *exp_manager;
     if (resume == -1) {
@@ -191,6 +192,12 @@ int main(int argc, char* argv[]) {
 #else
     exp_manager->run_evolution(nbstep);
 #endif
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "Total elapsed time = " << ((double)(std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count())/1000.0) << "[s] <=> " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+
+    std::cout << "###" << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << std::endl;
 
     delete exp_manager;
 

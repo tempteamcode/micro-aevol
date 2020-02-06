@@ -67,9 +67,7 @@ DnaMutator(Threefry::Gen&& mut_prng, int length, double mutation_rate)
 }
 
 inline void apply_mutations(Organism& organism) const {
-    for (int mutation_pos: mutation_list_) {
-        organism.apply_mutation(mutation_pos);
-    }
+    organism.apply_mutation(mutation_list_);
 };
 
 inline bool hasMutate() const { return (!mutation_list_.empty()); }

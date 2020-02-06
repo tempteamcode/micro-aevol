@@ -35,7 +35,6 @@ constexpr const int CODON_LEN = 3;
 
 class Dna {
 public:
-  // inline Dna() : seq_(0) { } // used in Organism.cpp
 
   inline Dna(int length, Threefry::Gen& rng) : seq_(length, [&rng] () { return (rng.random(NB_BASE) != 0); }) { }
 
